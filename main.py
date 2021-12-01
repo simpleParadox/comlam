@@ -7,29 +7,60 @@ import matplotlib.pyplot as plt
 import os
 import glob
 import regex as re
+from functions import store_avg_tr, map_stimuli_w2v
+from gensim.models import KeyedVectors
 
 
-###
-def load_nifti(path):
-    np_a = img.get_data(path)
+def avg_trs():
+    # Function to store Averaged concatenated TRs on GDrive.
+    nifti_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\Preprocessed\Reg_to_Std_and_Str\\"
+    tr_meta_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\"
+    participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
+    for participant in participants:
+        print(participant)
+        file_name = nifti_path + "P_" + str(participant) + "\\"
+        for file in glob.glob(file_name + "Synonym_RunB*\\filtered_func_data.nii"):
+            store_avg_tr(participant, file)
 
-    # Transpose the nifti file so that there are 'n' (324) images of 102x102x64(slices) of them.
-    np_a = np.transpose(np_a, (3, 0, 1, 2))
 
-    # For each 3d fMRI image, concatenate the volumetric pixels to get one single array.
-    np_a_rs = np_a.reshape(np_a.shape[0], -1)
+def create_w2v_mappings():
+    """
+    Retrieve word2vec vectors from Word2Vec for two-word stimuli only for now.
+    :return: Nothing; stores the concatenated vectors to disk.
+    """
+    participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
+    all_stims = []
+    for participant in participants:
+        stims = map_stimuli_w2v(participant)
+        all_stims.extend(stims)
 
-    mean_voxels_a = np.mean(np_a_rs, axis=0)
+    all_stims_set = list(set(all_stims))
 
-    for i, row in enumerate(np_a_rs):
-        np_a_rs[i] = np_a_rs[i] - mean_voxels_a
+    # Now load the Word2Vec model.
+    model = KeyedVectors.load_word2vec_format("G:\\jw_lab\\jwlab_eeg\\regression\\GoogleNews-vectors-negative300.bin.gz", binary=True)
 
-    return np_a_rs
+    stim_vector_dict = {}
+    for stim in all_stims_set:
+        words = stim.split()
+        vector = []
 
-path = "E:\My Drive\CoMLaM_rohan\CoMLaM\Preprocessed\Reg_to_Std_and_Str\P_1003\Synonym_RunA_13.feat\\filtered_func_dataA.nii"
-load_nifti(path)
+        # Each word vector should be of size 600.
+        for word in words:
+            word_vector = model[word]
+            vector.extend(word_vector.tolist())
+        stim_vector_dict[stim] = vector
+
+    np.savez_compressed('G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz', stim_vector_dict)
 
 
 def ridge():
     # Do ridge regression with GridSearchCV here.
-    pass
+    # Run the analysis for each participant here.
+    participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
+
+
+    for participant in participants:
+        nifti_data = load_nifti(participant)
+        tr_meta_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\1003_TRsToUse.xlsx"
+        nifti_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\Preprocessed\Reg_to_Std_and_Str\P_1003\Synonym_RunA_13.feat\\filtered_func_data.nii"
+        participant_tr = get_avg_tr(tr_meta_path, nifti_path)
