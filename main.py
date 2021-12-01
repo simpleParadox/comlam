@@ -15,13 +15,12 @@ from sklearn.model_selection import train_test_split
 def avg_trs():
     # Function to store Averaged concatenated TRs on GDrive.
     nifti_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\Preprocessed\Reg_to_Std_and_Str\\"
-    tr_meta_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\"
     participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
     for participant in participants:
-        print(participant)
         file_name = nifti_path + "P_" + str(participant) + "\\"
-        for file in glob.glob(file_name + "Synonym_RunB*\\filtered_func_data.nii"):
-            store_avg_tr(participant, file)
+        file_name_a = glob.glob(file_name + "Synonym_RunA*\\filtered_func_data.nii")
+        file_name_b = glob.glob(file_name + "Synonym_RunB*\\filtered_func_data.nii")
+        store_avg_tr(participant, file_name_a, file_name_b)
 
 
 def create_w2v_mappings():
@@ -54,7 +53,12 @@ def create_w2v_mappings():
     np.savez_compressed('G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz', stim_vector_dict)
 
 
-def ridge(part, synonym_condition):
+def cross_validation_nested(part, synonym_condition):
+    """
+    :param part: Accepts a list of participants. Example: [1003, 1006]
+    :param synonym_condition: [The synonym task. Accepts 'A' or 'B']
+    :return: 2v2 accuracy for the participant.
+    """
     # Do ridge regression with GridSearchCV here.
     # Run the analysis for each participant here.
 
@@ -68,6 +72,8 @@ def ridge(part, synonym_condition):
         # Load the data and the stims to do a leave two out cv.
         # Load the nifti, the word vectors, and the stim and then leave out two samples on which you'll do 2v2.
 
-        # x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+
+
 
 
