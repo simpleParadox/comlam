@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 import os
 import glob
 import regex as re
-from functions import store_avg_tr, map_stimuli_w2v
+from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v
 from gensim.models import KeyedVectors
+from sklearn.model_selection import train_test_split
 
 
 def avg_trs():
@@ -53,14 +54,20 @@ def create_w2v_mappings():
     np.savez_compressed('G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz', stim_vector_dict)
 
 
-def ridge():
+def ridge(part, synonym_condition):
     # Do ridge regression with GridSearchCV here.
     # Run the analysis for each participant here.
-    participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
 
-
+    if type(part) == list:
+        participants = part
+    else:
+        participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
     for participant in participants:
-        nifti_data = load_nifti(participant)
-        tr_meta_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\1003_TRsToUse.xlsx"
-        nifti_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\Preprocessed\Reg_to_Std_and_Str\P_1003\Synonym_RunA_13.feat\\filtered_func_data.nii"
-        participant_tr = get_avg_tr(tr_meta_path, nifti_path)
+        x, y, stims = load_nifti_and_w2v(participant, synonym_condition)
+
+        # Load the data and the stims to do a leave two out cv.
+        # Load the nifti, the word vectors, and the stim and then leave out two samples on which you'll do 2v2.
+
+        # x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+
+

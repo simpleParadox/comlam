@@ -99,8 +99,6 @@ def load_nifti_and_w2v(participant, synonym_condition):
     :param synonym_condition: The synonym condition for which to load the fMRI data. Takes either strings 'A' or 'B'.
     :return: the nifti file for the participant and the corresponding condition.
     """
-    participant = 1003
-    synonym_condition = 'A'
     path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\avg_trs_concat\\"
     nifti_path = path + f"Synonym_Run{synonym_condition}\\P_{participant}{synonym_condition}.npz"
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
