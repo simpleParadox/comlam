@@ -3,7 +3,7 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 from nilearn import image as img
-
+from scipy.spatial.distance import cosine
 
 def get_avg_trs():
     # Get avg TRs for all participants from GDrive.
@@ -55,6 +55,7 @@ def store_avg_tr(participant, nifti_patha, nifti_pathb):
         run2_nifti[stim[0]] = []
 
     # Store the corresponding fMRI files using the TR numbers from the excel sheet.
+    # For run1 -> from SynonymA folder, for run2 -> from SynonymB folder.
     for stim in stims_two_words:
         if stim[1] == 1:
             run1_nifti[stim[0]].append(np_a_rs[stim[2]])
@@ -100,15 +101,14 @@ def map_stimuli_w2v(participant):
     return stims_two_words
 
 
-def load_nifti_and_w2v(participant, synonym_condition):
+def load_nifti_and_w2v(participant):
     """
 
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
-    :param synonym_condition: The synonym condition for which to load the fMRI data. Takes either strings 'A' or 'B'.
     :return: the nifti file for the participant and the corresponding condition.
     """
     path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\avg_trs_concat\\"
-    nifti_path = path + f"P_{participant}.npz"
+    nifti_path = path + f"P_{participant}_concat.npz"
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
 
     w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
@@ -119,15 +119,38 @@ def load_nifti_and_w2v(participant, synonym_condition):
     y_data = []
 
     for stim, fmri in nifti_data.items():
-        x_data.append(fmri)
+        x_data.append(fmri.tolist())
         y_data.append(w2v_data[stim])
 
+    x_temp = np.array(x_data)
+    y_temp = np.array(y_data)
+
+    x = np.reshape(x_temp, (x_temp.shape[0], x_temp.shape[2]))
+
+    # Also loading the stimuli phrases.
     stims = []
     for stim in nifti_data.keys():
         stims.append(stim)
 
-    return x_data, y_data, stims
+    return x, y_temp, stims
 
+def two_vs_two(preds, ytest):
+    total_points = 0
+    points = 0
+    for pred, y_true in zip(preds, ytest):
+        s_i_pred = pred[0]
+        s_j_pred = pred[1]
+        s_i = y_true[0]
+        s_j = y_true[1]
+        dsii = cosine(s_i, s_i_pred)
+        dsjj = cosine(s_j, s_j_pred)
+        dsij = cosine(s_i, s_j_pred)
+        dsji = cosine(s_j, s_i_pred)
+
+        if dsii + dsjj <= dsij + dsji:
+            points += 1
+            temp_score = 1  # If the 2v2 test does not pass then temp_score = 0
+        total_points += 1
 
 def extended_2v2(y_test, preds):
     """
