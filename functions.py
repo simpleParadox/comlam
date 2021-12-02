@@ -82,7 +82,7 @@ def store_avg_tr(participant, nifti_patha, nifti_pathb):
 
 
     # Now store the values.
-    np.savez_compressed(f'E:\My Drive\CoMLaM_rohan\CoMLaM\\Synonym_RunB\\P_{participant}B.npz', concat_TR)
+    np.savez_compressed(f'E:\My Drive\CoMLaM_rohan\CoMLaM\\avg_trs_concat\\P_{participant}_concat.npz', concat_TR)
 
     # Load like this.
     # temp = np.load('E:\My Drive\CoMLaM_rohan\CoMLaM\\avg_trs_concat\\P_1003.npz', allow_pickle=True)['arr_0'].tolist()
@@ -108,7 +108,7 @@ def load_nifti_and_w2v(participant, synonym_condition):
     :return: the nifti file for the participant and the corresponding condition.
     """
     path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\avg_trs_concat\\"
-    nifti_path = path + f"Synonym_Run{synonym_condition}\\P_{participant}{synonym_condition}.npz"
+    nifti_path = path + f"P_{participant}.npz"
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
 
     w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
@@ -157,6 +157,11 @@ def extended_2v2(y_test, preds):
                 temp_score = 1  # If the 2v2 test does not pass then temp_score = 0
             total_points += 1
 
+
+
+
+def list_diff(li1, li2):
+    return list(set(li1) - set(li2)) + list(set(li2) - set(li1))
 
 def load_stim_vectors(participant):
     pass
