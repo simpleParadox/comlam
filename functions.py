@@ -149,8 +149,9 @@ def two_vs_two(preds, ytest):
 
         if dsii + dsjj <= dsij + dsji:
             points += 1
-            temp_score = 1  # If the 2v2 test does not pass then temp_score = 0
         total_points += 1
+
+    return points * 1.0 / total_points  # Multiplying by 1.0 for floating point conversion.
 
 def extended_2v2(y_test, preds):
     """

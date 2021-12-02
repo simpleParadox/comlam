@@ -107,22 +107,31 @@ def cross_validation_nested(part=None):
         # Write a function to do the leave-two-out cv.
         train_indices, test_indices = leave_two_out(stims)
 
+        preds_list = []
+        y_test_list = []
+
         for train_index, test_index in zip(train_indices, test_indices):
-            model = Ridge('lsqr')
+            model = Ridge()
             ridge_params = {'alpha': [0.01]}#, 0.1, 1, 10, 100, 1000, 10000, 100000]}
             clf = GridSearchCV(model, param_grid=ridge_params, n_jobs=1, scoring='neg_mean_squared_error', cv=10, verbose=5) # Setting cv=10 so that 4 samples are used for validation.
             clf.fit(x[train_index][:60000], y[train_index])
 
             preds = clf.predict(x[test_index])
 
-            ridge = Ridge()
-            ridge.fit(x[train_index], y[train_index])
-            pred = ridge.predict(x[test_index])
+
+
+            # ridge = Ridge()
+            # ridge.fit(x[train_index], y[train_index])
+            # pred = ridge.predict(x[test_index])
             # Store the preds in an array and all the ytest with the indices.
 
             # Should I do the 2v2 for one pair at a time or everything together later?
             # Which one would be easier to implement? Probably one pair at a time. Tradeoff is more function calls.
-        accuracy = two_vs_two(preds, y[test_index])
+            preds_list.append(preds)
+            y_test_list.append(y_test_list)
+
+        accuracy = two_vs_two(preds_list, y_test_list)
+
 
         participant_accuracies[participant] = accuracy
     print(participant_accuracies)
