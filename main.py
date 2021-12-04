@@ -81,7 +81,6 @@ def leave_two_out(stims):
 def cross_validation_nested(part=None):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]
-    :param synonym_condition: [The synonym task. Accepts 'A' or 'B']
     :return: 2v2 accuracy for the participant.
     """
     # Do ridge regression with GridSearchCV here.
@@ -137,5 +136,4 @@ def cross_validation_nested(part=None):
     print(participant_accuracies)
 
 
-
-
+cross_validation_nested()

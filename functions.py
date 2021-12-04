@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from nilearn import image as img
 from scipy.spatial.distance import cosine
+import platform
 
 def get_avg_trs():
     # Get avg TRs for all participants from GDrive.
@@ -107,11 +108,20 @@ def load_nifti_and_w2v(participant):
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
     :return: the nifti file for the participant and the corresponding condition.
     """
-    path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\avg_trs_concat\\"
+    system = platform.system()
+    if system == 'Windows':
+        # For local development.
+        path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\avg_trs_concat\\"  
+        w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
+    elif system == 'Linux':
+        # For Compute Canada development.
+        path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/avg_trs_concat/"
+        w2v_path = "embeds/two_words_stim_w2v_concat_dict.npz"
+        
     nifti_path = path + f"P_{participant}_concat.npz"
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
 
-    w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
+    
     w2v_data = np.load(w2v_path, allow_pickle=True)['arr_0'].tolist()
 
     # Now map the nifti data to the corresponding concatenated w2v vectors.
