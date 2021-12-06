@@ -8,10 +8,13 @@ import os
 import glob
 import regex as re
 from sklearn.linear_model import Ridge
+import time
 
 from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two
 from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
+
+from sklearn.preprocessing import StandardScaler
 
 
 def avg_trs():
@@ -85,54 +88,65 @@ def cross_validation_nested(part=None):
     """
     # Do ridge regression with GridSearchCV here.
     # Run the analysis for each participant here.
+    print('Calling cross_validation_nested.')
 
     participant_accuracies = {}
 
     if type(part) == list:
         participants = part
     else:
-        participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
+        participants = [1003]#, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
     for participant in participants:
+        print(participant)
         x, y, stims = load_nifti_and_w2v(1003)
+        print('loaded data')
 
-        # x = np.array(x)
-        # y = np.array(y)
+
+        scaler = StandardScaler()
+        x_scaled = scaler.fit_transform(x)
+        print('Scaled Data')
+
+
 
         # Load the data and the stims to do a leave two out cv.
         # Load the nifti, the word vectors, and the stim and then leave out two samples on which you'll do 2v2.
 
-        # x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
-
-        # Write a function to do the leave-two-out cv.
+        # Write a function to do the leave-two-out cv. This returns the train and test indices.
         train_indices, test_indices = leave_two_out(stims)
-
+        print('Decided indices')
         preds_list = []
         y_test_list = []
-
+        i = 0
+        start = time.time()
         for train_index, test_index in zip(train_indices, test_indices):
-            model = Ridge()
-            ridge_params = {'alpha': [0.01]}#, 0.1, 1, 10, 100, 1000, 10000, 100000]}
-            clf = GridSearchCV(model, param_grid=ridge_params, n_jobs=1, scoring='neg_mean_squared_error', cv=10, verbose=5) # Setting cv=10 so that 4 samples are used for validation.
-            clf.fit(x[train_index][:60000], y[train_index])
+            
+            print('Iteration: ', i)
+            i += 1
 
-            preds = clf.predict(x[test_index])
+            # model = Ridge(solver='cholesky')
+            # ridge_params = {'alpha': [0.01, 0.1, 1, 10, 100, 1000, 10000, 100000]}
+            # clf = GridSearchCV(model, param_grid=ridge_params, n_jobs=-1, scoring='neg_mean_squared_error', cv=8, verbose=5) # Setting cv=10 so that 4 samples are used for validation.
+            # clf.fit(x[train_index], y[train_index])
+            # preds = clf.predict(x[test_index])
+        
 
+            ridge = Ridge(solver='cholesky', alpha=100000)
+            ridge.fit(x_scaled[train_index], y[train_index])
+            preds = ridge.predict(x_scaled[test_index])
+            
 
-
-            # ridge = Ridge()
-            # ridge.fit(x[train_index], y[train_index])
-            # pred = ridge.predict(x[test_index])
             # Store the preds in an array and all the ytest with the indices.
 
-            # Should I do the 2v2 for one pair at a time or everything together later?
-            # Which one would be easier to implement? Probably one pair at a time. Tradeoff is more function calls.
             preds_list.append(preds)
-            y_test_list.append(y_test_list)
+            y_test_list.append(y[test_index])
 
         accuracy = two_vs_two(preds_list, y_test_list)
 
 
         participant_accuracies[participant] = accuracy
+        print(participant_accuracies)
+    stop = time.time()
+    print('Total time: ', stop - start)
     print(participant_accuracies)
 
 

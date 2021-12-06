@@ -147,16 +147,28 @@ def load_nifti_and_w2v(participant):
 def two_vs_two(preds, ytest):
     total_points = 0
     points = 0
+    print(type(preds))
+    print(type(ytest))
+    j = 0
     for pred, y_true in zip(preds, ytest):
-        s_i_pred = pred[0]
-        s_j_pred = pred[1]
-        s_i = y_true[0]
-        s_j = y_true[1]
+        
+        s_i_pred = pred[0].tolist()
+        s_j_pred = pred[1].tolist()
+        s_i = y_true[0].tolist()
+        s_j = y_true[1].tolist()
+
+
+        # print("s_i_pred", s_i_pred)
+        # print("s_j_pred", s_j_pred)
+        # print('s_i ', s_i)
+        # print('s_j ', s_j)
+        
+
         dsii = cosine(s_i, s_i_pred)
         dsjj = cosine(s_j, s_j_pred)
         dsij = cosine(s_i, s_j_pred)
         dsji = cosine(s_j, s_i_pred)
-
+        
         if dsii + dsjj <= dsij + dsji:
             points += 1
         total_points += 1
