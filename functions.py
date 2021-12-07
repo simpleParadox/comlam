@@ -221,11 +221,11 @@ def load_nifti_and_w2v(participant):
     system = platform.system()
     if system == 'Windows':
         # For local development.
-        path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\avg_trs_concat\\"  
+        path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\spm\\sentiment"
         w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
     elif system == 'Linux':
         # For Compute Canada development.
-        path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/avg_trs_concat/"
+        path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/"
         w2v_path = "embeds/two_words_stim_w2v_concat_dict.npz"
         
     nifti_path = path + f"P_{participant}_concat.npz"
