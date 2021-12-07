@@ -7,7 +7,7 @@ from scipy.spatial.distance import cosine
 import platform
 import glob
 
-def store_trs_spm(participant, task):
+def store_trs_spm(participant, task, remove_mean=False):
 
     """
     Stores the avg and concatenated files for each stimuli for each participant.
@@ -37,7 +37,28 @@ def store_trs_spm(participant, task):
     grouped_metadata = two_stim_metadata.groupby(['words'])
 
     # Then each row and read corresponding file name.
-    
+
+    # Load all the fMRI data to remove the mean voxels from each of the stored fMRI file.
+
+    nifti_run_1_all_files = []
+    nifti_run_2_all_files = []
+    if remove_mean == True:
+        for file in glob.glob(run1_path + "*.nii"):
+            nifti = img.get_data(file)
+            nifti = np.transpose(nifti, (3, 0, 1, 2))
+            nifti_rs = nifti.reshape(nifti.shape[0], -1)
+            nifti_run_1_all_files.append(nifti_rs)
+
+        for file in glob.glob(run2_path + "*.nii"):
+            nifti = img.get_data(file)
+            nifti = np.transpose(nifti, (3, 0, 1, 2))
+            nifti_rs = nifti.reshape(nifti.shape[0], -1)
+            nifti_run_2_all_files.append(nifti_rs)
+
+        mean_voxels_a = np.mean(nifti_run_1_all_files, axis=0)
+        mean_voxels_b = np.mean(nifti_run_2_all_files, axis=0)
+
+
     concat_tr = {}
     counter = 0
     for row in grouped_metadata:
@@ -78,6 +99,8 @@ def store_trs_spm(participant, task):
                 # Now store the file in an array.
                 np_a_j_1 = np.transpose(data_j_1, (3, 0, 1, 2))
                 np_a_rs_j_1 = np_a_j_1.reshape(np_a_j_1.shape[0], -1)
+                if remove_mean == True:
+                    np_a_rs_j_1 -= mean_voxels_a
                 first_point_nifti_files.append(np_a_rs_j_1)
             elif run_j == 2:
                 # Read from the 'run02; folder
@@ -87,6 +110,8 @@ def store_trs_spm(participant, task):
                 # Now store the file in an array for later averaging.
                 np_a_j_2 = np.transpose(data_j_2, (3, 0, 1, 2))
                 np_a_rs_j_2 = np_a_j_2.reshape(np_a_j_2.shape[0], -1)
+                if remove_mean == True:
+                    np_a_rs_j_2 -= mean_voxels_b
                 first_point_nifti_files.append(np_a_rs_j_2)
 
             if run_k == 1:
@@ -96,6 +121,8 @@ def store_trs_spm(participant, task):
                 # Now store the file in an array.
                 np_b_k_1 = np.transpose(data_k_1, (3, 0, 1, 2))
                 np_a_rs_k_1 = np_b_k_1.reshape(np_b_k_1.shape[0], -1)
+                if remove_mean == True:
+                    np_a_rs_k_1 -= mean_voxels_a
                 second_point_nifti_files.append(np_a_rs_k_1)
 
             elif run_k == 2:
@@ -103,25 +130,107 @@ def store_trs_spm(participant, task):
                 # print("Run k=2 ", file_name)
                 data_k_2 = img.get_data(file_name)
                 # Now store the file in an array.
-                np_b_k_2 = np.transpose(data_k_2, (3, 0, 1, 2))
-                np_a_rs_k_2 = np_b_k_2.reshape(np_b_k_2.shape[0], -1)
+                np_a_k_2 = np.transpose(data_k_2, (3, 0, 1, 2))
+                np_a_rs_k_2 = np_a_k_2.reshape(np_a_k_2.shape[0], -1)
+                if remove_mean == True:
+                    np_a_rs_k_2 -= mean_voxels_b
                 second_point_nifti_files.append(np_a_rs_k_2)
 
             j += 2
             k += 2
-        
+
         # Average and concatenate.
         first_point_avg = np.mean(first_point_nifti_files, axis=0)
         second_point_avg = np.mean(second_point_nifti_files, axis=0)
         concat_tr[stim] = np.concatenate((first_point_avg, second_point_avg), axis=1)
 
     np.savez_compressed(f"G:\comlam\spm\sentiment\P{participant}.npz", concat_tr)
-        
-        
+
+
+def store_trs_fsl(participant, task, remove_mean=False):
+    participant = 1012
+    task = 'sentiment'
+    fsl_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\Preprocessed\FSL\\"
+    participant_path = fsl_path + "P" + str(participant) + "\\" + task + "\\"
+    tr_meta_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
+    metadata = pd.read_excel(tr_meta_path)
+    run1_path = participant_path + "run01\\"
+    run2_path = participant_path + "run02\\"
+
+    # Select only the stimuli that has two words only.
+    ## Find the rows where the stim is more than two words.
+    non_two_word_phrases_idx = [i for i in range(len(metadata)) if metadata.iloc[i, 0].count(' ') > 1]
+    two_stim_metadata = metadata.drop(labels=non_two_word_phrases_idx, axis=0)
+
+    # First group the TR_metadata by stimuli.
+    grouped_metadata = two_stim_metadata.groupby(['words'])
+
+
+    np_a = img.get_data(run1_path + "filtered_func_data.nii")
+    np_a = np.transpose(np_a, (3, 0, 1, 2))
+    np_a_rs = np_a.reshape(np_a.shape[0], -1)
+    mean_voxels_a = np.mean(np_a_rs, axis=0)
+
+    np_b = img.get_data(run2_path + "filtered_func_data.nii")
+    np_b = np.transpose(np_b, (3, 0, 1, 2))
+    np_b_rs = np_b.reshape(np_b.shape[0], -1)
+    mean_voxels_b = np.mean(np_b_rs, axis=0)
+
+    if remove_mean == True:
+        for i, row in enumerate(np_a_rs):
+            np_a_rs[i] = np_a_rs[i] - mean_voxels_a
+        for i, row in enumerate(np_b_rs):
+            np_b_rs[i] = np_b_rs[i] - mean_voxels_b
+
+    concat_tr = {}
+    counter = 0
+
+    for row in grouped_metadata:
+        print(counter)
+        counter += 1
+        stim = row[0]
+        df = row[1]
+        runs = df['run'].values
+        tr_nums = df['TRNum'].values  # Actually the file index in python is 1 less than the actual number in the list.
+
+        j = 0
+        k = 1
+        first_point_nifti_files = []
+        second_point_nifti_files = []
+        while (j < 7 and k < 8):
+            run_j = runs[j]
+            tr_num_j = int(tr_nums[j]) - 1
+
+            run_k = runs[k]
+            tr_num_k = int(tr_nums[k]) - 1
+
+
+            if run_j == 1:
+                first_point_nifti_files.append(np_a_rs[tr_num_j])
+            elif run_j == 2:
+                first_point_nifti_files.append(np_b_rs[tr_num_j])
+
+            if run_k == 1:
+                second_point_nifti_files.append(np_a_rs[tr_num_k])
+            elif run_k == 2:
+                second_point_nifti_files.append(np_b_rs[tr_num_k])
+
+            j += 2
+            k += 2
+
+        first_point_avg = np.mean(first_point_nifti_files, axis=0)
+        second_point_avg = np.mean(second_point_nifti_files, axis=0)
+        concat_tr[stim] = np.concatenate((first_point_avg, second_point_avg), axis=1)
+
+    np.savez_compressed(f"G:\comlam\\fsl\\sentiment\P{participant}.npz", concat_tr)
+
+
+
 
 
 
 def store_avg_tr(participant, nifti_patha, nifti_pathb):
+    # Don't use this function.
 
     # participant = 1003
     # nifti_patha = "smb://localhost/Google Drive/My Drive/CoMLaM_rohan/CoMLaM/Preprocessed/Reg_to_Std_and_Str/P_0999/Synonym_RunA_12.feat/filtered_func_data.nii"
@@ -200,6 +309,8 @@ def store_avg_tr(participant, nifti_patha, nifti_pathb):
     # temp = np.load('E:\My Drive\CoMLaM_rohan\CoMLaM\\avg_trs_concat\\P_1003.npz', allow_pickle=True)['arr_0'].tolist()
 
 
+
+
 def map_stimuli_w2v(participant):
     tr_meta_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
     metadata = pd.read_excel(tr_meta_path)  # Remove this in the final version.
@@ -227,11 +338,11 @@ def load_nifti_and_w2v(participant):
         # For Compute Canada development.
         path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/"
         w2v_path = "embeds/two_words_stim_w2v_concat_dict.npz"
-        
+
     nifti_path = path + f"P_{participant}_concat.npz"
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
 
-    
+
     w2v_data = np.load(w2v_path, allow_pickle=True)['arr_0'].tolist()
 
     # Now map the nifti data to the corresponding concatenated w2v vectors.
@@ -261,7 +372,7 @@ def two_vs_two(preds, ytest):
     print(type(ytest))
     j = 0
     for pred, y_true in zip(preds, ytest):
-        
+
         s_i_pred = pred[0].tolist()
         s_j_pred = pred[1].tolist()
         s_i = y_true[0].tolist()
@@ -272,13 +383,13 @@ def two_vs_two(preds, ytest):
         # print("s_j_pred", s_j_pred)
         # print('s_i ', s_i)
         # print('s_j ', s_j)
-        
+
 
         dsii = cosine(s_i, s_i_pred)
         dsjj = cosine(s_j, s_j_pred)
         dsij = cosine(s_i, s_j_pred)
         dsji = cosine(s_j, s_i_pred)
-        
+
         if dsii + dsjj <= dsij + dsji:
             points += 1
         total_points += 1
