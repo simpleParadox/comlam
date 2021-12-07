@@ -5,11 +5,121 @@ import matplotlib.pyplot as plt
 from nilearn import image as img
 from scipy.spatial.distance import cosine
 import platform
+import glob
 
-def get_avg_trs():
-    # Get avg TRs for all participants from GDrive.
-    pass
+def store_trs_spm(participant, task):
+
+    """
+    Stores the avg and concatenated files for each stimuli for each participant.
+    :param participant: The number of participant. Accepts a single integer. E.g. 1003.
+    :param task: Either 'sentiment' or 'synonym'
+    :return: None
+
+    """
+    # participant = 1012  # Remove this when not testing.
+    # task = 'sentiment'
+
+    # Define the paths for GDrive.
+    spm_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\Preprocessed\SPM\\"
+    participant_path = spm_path + "P" + str(participant) + "\\" + task + "\\"
+    tr_meta_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
+    metadata = pd.read_excel(tr_meta_path)
+    run1_path = participant_path + "run01\\"
+    run2_path = participant_path + "run02\\"
+
+
+    # Select only the stimuli that has two words only.
+    ## Find the rows where the stim is more than two words.
+    non_two_word_phrases_idx = [i for i in range(len(metadata)) if metadata.iloc[i,0].count(' ') > 1]
+    two_stim_metadata = metadata.drop(labels=non_two_word_phrases_idx, axis=0)
+
+    # First group the TR_metadata by stimuli.
+    grouped_metadata = two_stim_metadata.groupby(['words'])
+
+    # Then each row and read corresponding file name.
     
+    concat_tr = {}
+    counter = 0
+    for row in grouped_metadata:
+        print(counter)
+        counter += 1
+        # 'row' is a tuple.
+        stim = row[0]
+        df = row[1] # Second index is the dataframe for the stimulus.
+        runs = df['run'].values
+        nifti_idx = df['Nifti'].values
+
+        # Now do the retrieval of fMRI data here and averaging and concatenating.
+        j = 0
+        k = 1
+        first_point_nifti_files = []
+        second_point_nifti_files = []
+        while(j < 7 and k < 8):
+            run_j = runs[j]
+            nifti_j = int(nifti_idx[j])
+
+            run_k = runs[k]
+            nifti_k = int(nifti_idx[k])
+
+            left_j_1 = str(nifti_j).zfill(5)
+            left_j_2 = str(nifti_j).zfill(6)
+
+            left_k_1 = str(nifti_k).zfill(5)
+            left_k_2 = str(nifti_k).zfill(6)
+
+            # print("Nifti j", nifti_j)
+            # print('Nifti k', nifti_k)
+
+
+            if run_j == 1:
+                file_name = glob.glob(run1_path + f"*{left_j_1}-{left_j_2}-*.nii")
+                # print("Run j=1 ", file_name)
+                data_j_1 = img.get_data(file_name)
+                # Now store the file in an array.
+                np_a_j_1 = np.transpose(data_j_1, (3, 0, 1, 2))
+                np_a_rs_j_1 = np_a_j_1.reshape(np_a_j_1.shape[0], -1)
+                first_point_nifti_files.append(np_a_rs_j_1)
+            elif run_j == 2:
+                # Read from the 'run02; folder
+                file_name = glob.glob(run2_path + f"*{left_j_1}-{left_j_2}-*.nii")
+                # print("Run j=2 ", file_name)
+                data_j_2 = img.get_data(file_name)
+                # Now store the file in an array for later averaging.
+                np_a_j_2 = np.transpose(data_j_2, (3, 0, 1, 2))
+                np_a_rs_j_2 = np_a_j_2.reshape(np_a_j_2.shape[0], -1)
+                first_point_nifti_files.append(np_a_rs_j_2)
+
+            if run_k == 1:
+                file_name = glob.glob(run1_path + f"*{left_k_1}-{left_k_2}-*.nii")
+                # print("Run k=1 ", file_name)
+                data_k_1 = img.get_data(file_name)
+                # Now store the file in an array.
+                np_b_k_1 = np.transpose(data_k_1, (3, 0, 1, 2))
+                np_a_rs_k_1 = np_b_k_1.reshape(np_b_k_1.shape[0], -1)
+                second_point_nifti_files.append(np_a_rs_k_1)
+
+            elif run_k == 2:
+                file_name = glob.glob(run2_path + f"*{left_k_1}-{left_k_2}-*.nii")
+                # print("Run k=2 ", file_name)
+                data_k_2 = img.get_data(file_name)
+                # Now store the file in an array.
+                np_b_k_2 = np.transpose(data_k_2, (3, 0, 1, 2))
+                np_a_rs_k_2 = np_b_k_2.reshape(np_b_k_2.shape[0], -1)
+                second_point_nifti_files.append(np_a_rs_k_2)
+
+            j += 2
+            k += 2
+        
+        # Average and concatenate.
+        first_point_avg = np.mean(first_point_nifti_files, axis=0)
+        second_point_avg = np.mean(second_point_nifti_files, axis=0)
+        concat_tr[stim] = np.concatenate((first_point_avg, second_point_avg), axis=1)
+
+    np.savez_compressed(f"G:\comlam\spm\sentiment\P{participant}.npz", concat_tr)
+        
+        
+
+
 
 def store_avg_tr(participant, nifti_patha, nifti_pathb):
 

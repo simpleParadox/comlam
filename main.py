@@ -10,7 +10,7 @@ import regex as re
 from sklearn.linear_model import Ridge
 import time
 
-from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two
+from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm
 from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
@@ -150,4 +150,6 @@ def cross_validation_nested(part=None):
     print(participant_accuracies)
 
 
-cross_validation_nested()
+# cross_validation_nested()
+
+store_trs_spm(1012, 'sentiment')
