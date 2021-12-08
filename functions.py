@@ -148,8 +148,8 @@ def store_trs_spm(participant, task, remove_mean=False):
 
 
 def store_trs_fsl(participant, task, remove_mean=False):
-    participant = 1012
-    task = 'sentiment'
+    # participant = 1012
+    # task = 'sentiment'
     fsl_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\Preprocessed\FSL\\"
     participant_path = fsl_path + "P" + str(participant) + "\\" + task + "\\"
     tr_meta_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
@@ -425,7 +425,25 @@ def extended_2v2(y_test, preds):
             total_points += 1
 
 
+def leave_two_out(stims):
+    """
+    Return the indices for all leave-two-out cv.
+    :param stims: the stimuli strings
+    :return: the training and test sets.
+    """
 
+    # Find out all the pairs.
+    all_test_pairs = []
+    all_train_pairs = []
+    for i in range(len(stims) - 1):
+        for j in range(i + 1, len(stims)):
+            test_pair = [i, j]
+            all_test_pairs.append(test_pair)
+            train_indices_temp = np.arange(len(stims)).tolist()
+            train_pairs = list_diff(train_indices_temp, test_pair)
+            all_train_pairs.append(train_pairs)
+
+    return all_train_pairs, all_test_pairs
 
 def list_diff(li1, li2):
     return list(set(li1) - set(li2)) + list(set(li2) - set(li1))
