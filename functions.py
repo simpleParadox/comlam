@@ -45,16 +45,14 @@ def store_trs_spm(participant, task, remove_mean=False):
     if remove_mean == True:
         for file in glob.glob(run1_path + "*.nii"):
             nifti = img.get_data(file)
-            nifti = np.transpose(nifti, (3, 0, 1, 2))
-            nifti_rs = nifti.reshape(nifti.shape[0], -1)
+            nifti_rs = np.array(nifti.reshape(1, -1))
             nifti_run_1_all_files.append(nifti_rs)
-
+        print("First part done")
         for file in glob.glob(run2_path + "*.nii"):
             nifti = img.get_data(file)
-            nifti = np.transpose(nifti, (3, 0, 1, 2))
-            nifti_rs = nifti.reshape(nifti.shape[0], -1)
+            nifti_rs = np.array(nifti.reshape(1, -1))
             nifti_run_2_all_files.append(nifti_rs)
-
+        print("Second part done")
         mean_voxels_a = np.mean(nifti_run_1_all_files, axis=0)
         mean_voxels_b = np.mean(nifti_run_2_all_files, axis=0)
 
@@ -100,7 +98,7 @@ def store_trs_spm(participant, task, remove_mean=False):
                 np_a_j_1 = np.transpose(data_j_1, (3, 0, 1, 2))
                 np_a_rs_j_1 = np_a_j_1.reshape(np_a_j_1.shape[0], -1)
                 if remove_mean == True:
-                    np_a_rs_j_1 -= mean_voxels_a
+                    np_a_rs_j_1 = np_a_rs_j_1 - mean_voxels_a
                 first_point_nifti_files.append(np_a_rs_j_1)
             elif run_j == 2:
                 # Read from the 'run02; folder
@@ -111,7 +109,7 @@ def store_trs_spm(participant, task, remove_mean=False):
                 np_a_j_2 = np.transpose(data_j_2, (3, 0, 1, 2))
                 np_a_rs_j_2 = np_a_j_2.reshape(np_a_j_2.shape[0], -1)
                 if remove_mean == True:
-                    np_a_rs_j_2 -= mean_voxels_b
+                    np_a_rs_j_2 = np_a_rs_j_2 - mean_voxels_b
                 first_point_nifti_files.append(np_a_rs_j_2)
 
             if run_k == 1:
@@ -122,7 +120,7 @@ def store_trs_spm(participant, task, remove_mean=False):
                 np_b_k_1 = np.transpose(data_k_1, (3, 0, 1, 2))
                 np_a_rs_k_1 = np_b_k_1.reshape(np_b_k_1.shape[0], -1)
                 if remove_mean == True:
-                    np_a_rs_k_1 -= mean_voxels_a
+                    np_a_rs_k_1 = np_a_rs_k_1 - mean_voxels_a
                 second_point_nifti_files.append(np_a_rs_k_1)
 
             elif run_k == 2:
@@ -133,7 +131,7 @@ def store_trs_spm(participant, task, remove_mean=False):
                 np_a_k_2 = np.transpose(data_k_2, (3, 0, 1, 2))
                 np_a_rs_k_2 = np_a_k_2.reshape(np_a_k_2.shape[0], -1)
                 if remove_mean == True:
-                    np_a_rs_k_2 -= mean_voxels_b
+                    np_a_rs_k_2 = np_a_rs_k_2 - mean_voxels_b
                 second_point_nifti_files.append(np_a_rs_k_2)
 
             j += 2
@@ -143,13 +141,13 @@ def store_trs_spm(participant, task, remove_mean=False):
         first_point_avg = np.mean(first_point_nifti_files, axis=0)
         second_point_avg = np.mean(second_point_nifti_files, axis=0)
         concat_tr[stim] = np.concatenate((first_point_avg, second_point_avg), axis=1)
-
-    np.savez_compressed(f"G:\comlam\spm\sentiment\P{participant}.npz", concat_tr)
+    if remove_mean == True:
+        np.savez_compressed(f"G:\comlam\spm\sentiment\P{participant}_mean_removed.npz", concat_tr)
+    else:
+        np.savez_compressed(f"G:\comlam\spm\sentiment\P{participant}.npz", concat_tr)
 
 
 def store_trs_fsl(participant, task, remove_mean=False):
-    participant = 1012
-    task = 'sentiment'
     fsl_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\Preprocessed\FSL\\"
     participant_path = fsl_path + "P" + str(participant) + "\\" + task + "\\"
     tr_meta_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
@@ -169,14 +167,16 @@ def store_trs_fsl(participant, task, remove_mean=False):
     np_a = img.get_data(run1_path + "filtered_func_data.nii")
     np_a = np.transpose(np_a, (3, 0, 1, 2))
     np_a_rs = np_a.reshape(np_a.shape[0], -1)
-    mean_voxels_a = np.mean(np_a_rs, axis=0)
+
 
     np_b = img.get_data(run2_path + "filtered_func_data.nii")
     np_b = np.transpose(np_b, (3, 0, 1, 2))
     np_b_rs = np_b.reshape(np_b.shape[0], -1)
-    mean_voxels_b = np.mean(np_b_rs, axis=0)
+
 
     if remove_mean == True:
+        mean_voxels_a = np.mean(np_a_rs, axis=0)
+        mean_voxels_b = np.mean(np_b_rs, axis=0)
         for i, row in enumerate(np_a_rs):
             np_a_rs[i] = np_a_rs[i] - mean_voxels_a
         for i, row in enumerate(np_b_rs):
@@ -199,7 +199,7 @@ def store_trs_fsl(participant, task, remove_mean=False):
         second_point_nifti_files = []
         while (j < 7 and k < 8):
             run_j = runs[j]
-            tr_num_j = int(tr_nums[j]) - 1
+            tr_num_j = int(tr_nums[j]) - 1 # Subtracting 1 because the data processed in MatLab was 1-indexed.
 
             run_k = runs[k]
             tr_num_k = int(tr_nums[k]) - 1
@@ -223,9 +223,6 @@ def store_trs_fsl(participant, task, remove_mean=False):
         concat_tr[stim] = np.concatenate((first_point_avg, second_point_avg), axis=1)
 
     np.savez_compressed(f"G:\comlam\\fsl\\sentiment\P{participant}.npz", concat_tr)
-
-
-
 
 
 
@@ -323,7 +320,7 @@ def map_stimuli_w2v(participant):
     return stims_two_words
 
 
-def load_nifti_and_w2v(participant):
+def load_nifti_and_w2v(participant, mean_removed=False):
     """
 
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
@@ -332,14 +329,17 @@ def load_nifti_and_w2v(participant):
     system = platform.system()
     if system == 'Windows':
         # For local development.
-        path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\spm\\sentiment"
+        path = "G:\comlam\spm\sentiment\\"
         w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
     elif system == 'Linux':
         # For Compute Canada development.
         path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/"
         w2v_path = "embeds/two_words_stim_w2v_concat_dict.npz"
 
-    nifti_path = path + f"P_{participant}_concat.npz"
+    if mean_removed == True:
+        nifti_path = path + f"P{participant}_mean_removed.npz"
+    else:
+        nifti_path = path + f"P{participant}.npz"
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
 
 

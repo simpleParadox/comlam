@@ -10,7 +10,7 @@ import regex as re
 from sklearn.linear_model import Ridge
 import time
 
-from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm
+from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm, store_trs_fsl
 from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
@@ -81,7 +81,7 @@ def leave_two_out(stims):
     return all_train_pairs, all_test_pairs
 
 
-def cross_validation_nested(part=None):
+def cross_validation_nested(part=None, mean_removed=False):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]
     :return: 2v2 accuracy for the participant.
@@ -98,7 +98,7 @@ def cross_validation_nested(part=None):
         participants = [1003]#, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
     for participant in participants:
         print(participant)
-        x, y, stims = load_nifti_and_w2v(1003)
+        x, y, stims = load_nifti_and_w2v(1012, mean_removed=mean_removed)
         print('loaded data')
 
 
@@ -122,6 +122,8 @@ def cross_validation_nested(part=None):
             
             print('Iteration: ', i)
             i += 1
+            if i == 2:
+                break
 
             # model = Ridge(solver='cholesky')
             # ridge_params = {'alpha': [0.01, 0.1, 1, 10, 100, 1000, 10000, 100000]}
@@ -152,4 +154,5 @@ def cross_validation_nested(part=None):
 
 # cross_validation_nested()
 
-store_trs_spm(1012, 'sentiment')
+store_trs_spm(1006, 'sentiment', remove_mean=True)
+# store_trs_fsl(1012, 'sentiment', remove_mean=False)
