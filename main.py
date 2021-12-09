@@ -10,7 +10,7 @@ import regex as re
 from sklearn.linear_model import Ridge
 import time
 
-from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm, store_trs_fsl
+from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out
 from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
@@ -60,25 +60,7 @@ def create_w2v_mappings():
 
 
 
-def leave_two_out(stims):
-    """
-    Return the indices for all leave-two-out cv.
-    :param stims: the stimuli strings
-    :return: the training and test sets.
-    """
 
-    # Find out all the pairs.
-    all_test_pairs = []
-    all_train_pairs = []
-    for i in range(len(stims) - 1):
-        for j in range(i + 1, len(stims)):
-            test_pair = [i, j]
-            all_test_pairs.append(test_pair)
-            train_indices_temp = np.arange(len(stims)).tolist()
-            train_pairs = list_diff(train_indices_temp, test_pair)
-            all_train_pairs.append(train_pairs)
-
-    return all_train_pairs, all_test_pairs
 
 
 def cross_validation_nested(part=None, mean_removed=False):
@@ -106,8 +88,6 @@ def cross_validation_nested(part=None, mean_removed=False):
         x_scaled = scaler.fit_transform(x)
         print('Scaled Data')
 
-
-
         # Load the data and the stims to do a leave two out cv.
         # Load the nifti, the word vectors, and the stim and then leave out two samples on which you'll do 2v2.
 
@@ -122,8 +102,6 @@ def cross_validation_nested(part=None, mean_removed=False):
             
             print('Iteration: ', i)
             i += 1
-            if i == 2:
-                break
 
             # model = Ridge(solver='cholesky')
             # ridge_params = {'alpha': [0.01, 0.1, 1, 10, 100, 1000, 10000, 100000]}

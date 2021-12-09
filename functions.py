@@ -47,12 +47,12 @@ def store_trs_spm(participant, task, remove_mean=False):
             nifti = img.get_data(file)
             nifti_rs = np.array(nifti.reshape(1, -1))
             nifti_run_1_all_files.append(nifti_rs)
-        print("First part done")
+
         for file in glob.glob(run2_path + "*.nii"):
             nifti = img.get_data(file)
             nifti_rs = np.array(nifti.reshape(1, -1))
             nifti_run_2_all_files.append(nifti_rs)
-        print("Second part done")
+
         mean_voxels_a = np.mean(nifti_run_1_all_files, axis=0)
         mean_voxels_b = np.mean(nifti_run_2_all_files, axis=0)
 
@@ -148,6 +148,8 @@ def store_trs_spm(participant, task, remove_mean=False):
 
 
 def store_trs_fsl(participant, task, remove_mean=False):
+    # participant = 1012
+    # task = 'sentiment'
     fsl_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\Preprocessed\FSL\\"
     participant_path = fsl_path + "P" + str(participant) + "\\" + task + "\\"
     tr_meta_path = "E:\.shortcut-targets-by-id\\1R-Ea0u_BCBsGnEX6RJL09tfLMV_hmwWe\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
@@ -167,16 +169,14 @@ def store_trs_fsl(participant, task, remove_mean=False):
     np_a = img.get_data(run1_path + "filtered_func_data.nii")
     np_a = np.transpose(np_a, (3, 0, 1, 2))
     np_a_rs = np_a.reshape(np_a.shape[0], -1)
-
+    mean_voxels_a = np.mean(np_a_rs, axis=0)
 
     np_b = img.get_data(run2_path + "filtered_func_data.nii")
     np_b = np.transpose(np_b, (3, 0, 1, 2))
     np_b_rs = np_b.reshape(np_b.shape[0], -1)
-
+    mean_voxels_b = np.mean(np_b_rs, axis=0)
 
     if remove_mean == True:
-        mean_voxels_a = np.mean(np_a_rs, axis=0)
-        mean_voxels_b = np.mean(np_b_rs, axis=0)
         for i, row in enumerate(np_a_rs):
             np_a_rs[i] = np_a_rs[i] - mean_voxels_a
         for i, row in enumerate(np_b_rs):
@@ -329,7 +329,7 @@ def load_nifti_and_w2v(participant, mean_removed=False):
     system = platform.system()
     if system == 'Windows':
         # For local development.
-        path = "G:\comlam\spm\sentiment\\"
+        path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\spm\\sentiment"
         w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
     elif system == 'Linux':
         # For Compute Canada development.
@@ -425,7 +425,25 @@ def extended_2v2(y_test, preds):
             total_points += 1
 
 
+def leave_two_out(stims):
+    """
+    Return the indices for all leave-two-out cv.
+    :param stims: the stimuli strings
+    :return: the training and test sets.
+    """
 
+    # Find out all the pairs.
+    all_test_pairs = []
+    all_train_pairs = []
+    for i in range(len(stims) - 1):
+        for j in range(i + 1, len(stims)):
+            test_pair = [i, j]
+            all_test_pairs.append(test_pair)
+            train_indices_temp = np.arange(len(stims)).tolist()
+            train_pairs = list_diff(train_indices_temp, test_pair)
+            all_train_pairs.append(train_pairs)
+
+    return all_train_pairs, all_test_pairs
 
 def list_diff(li1, li2):
     return list(set(li1) - set(li2)) + list(set(li2) - set(li1))
