@@ -130,7 +130,10 @@ def cross_validation_nested(part=None, mean_removed=False):
     print(participant_accuracies)
 
 
-# cross_validation_nested()
-
-store_trs_spm(1006, 'sentiment', remove_mean=True)
+cross_validation_nested()
+# # parts = [1004, 1007, 1008, 1010, 1013, 1016, 1017, 1019, 1024]
+# parts = [1024]
+# for p in parts:
+#     print("Participant: ", p)
+#     store_trs_spm(p, 'sentiment', remove_mean=False)
 # store_trs_fsl(1012, 'sentiment', remove_mean=False)
