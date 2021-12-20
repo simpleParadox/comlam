@@ -9,6 +9,7 @@ import numpy as np
 import logging
 from sklearn.linear_model import RidgeCV
 import time
+from joblib import Parallel, delayed
 
 class RidgeReg:
 
@@ -108,24 +109,42 @@ class RidgeReg:
         return y_pred
 
 
-if __name__ == '__main__':
 
-    start = time.time()
-    model = RidgeReg()
-    x_train = np.random.rand(46, 1300000)
-    y_train = np.random.rand(46, 300)
-    model.train(x_train, y_train)
-    stop = time.time()
-    print(f"Time for numpy implementation SVD: {stop - start} seconds.")
-
-    preds = model.predict(x_train)
-
-
-    start = time.time()
+def regress(x_train, y_train):
     alphas = [0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1, 5, 10]
     cv_model = RidgeCV(alphas=alphas, gcv_mode='svd', scoring='neg_mean_squared_error', alpha_per_target=True)
     cv_model.fit(x_train, y_train)
+    return cv_model
+
+
+
+if __name__ == '__main__':
+
+    start = time.time()
+    # model = RidgeReg()
+    # x_train = np.random.rand(46, 1300000)
+    # y_train = np.random.rand(46, 300)
+    # model.train(x_train, y_train)
+    # stop = time.time()
+    # print(f"Time for numpy implementation SVD: {stop - start} seconds.")
+    #
+    # preds = model.predict(x_train)
+
+    data = []
+    for i in range(10):
+        x_train = np.random.rand(46, 130000)
+        y_train = np.random.rand(46, 300)
+        data.append([x_train, y_train])
+
+    start = time.time()
+    for x, y in data:
+        regress(x, y)
     stop = time.time()
-    print(f"Time for RidgeCV implementation SVD: {stop - start} seconds.")
+    print(f"Time for RidgeCV implementation SVD Loop: {stop - start} seconds.")
+
+    start = time.time()
+    out = Parallel(n_jobs=4, backend='loky', verbose=50)(delayed(regress)(x, y) for x, y in data)
+    stop = time.time()
+    print(f"Time for RidgeCV implementation SVD with joblib: {stop - start} seconds.")
 
 
