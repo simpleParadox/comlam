@@ -130,9 +130,11 @@ if __name__ == '__main__':
     #
     # preds = model.predict(x_train)
 
+    print("Making data")
     data = []
     for i in range(10):
-        x_train = np.random.rand(46, 130000)
+        print("Iteration: ",i)
+        x_train = np.random.rand(46, 1300000)
         y_train = np.random.rand(46, 300)
         data.append([x_train, y_train])
 
@@ -142,9 +144,10 @@ if __name__ == '__main__':
     stop = time.time()
     print(f"Time for RidgeCV implementation SVD Loop: {stop - start} seconds.")
 
-    start = time.time()
-    out = Parallel(n_jobs=4, backend='loky', verbose=50)(delayed(regress)(x, y) for x, y in data)
-    stop = time.time()
-    print(f"Time for RidgeCV implementation SVD with joblib: {stop - start} seconds.")
+    # print("Initiating joblib")
+    # start = time.time()
+    # out = Parallel(n_jobs=5, backend='threading', verbose=50)(delayed(regress)(x, y) for x, y in data)
+    # stop = time.time()
+    # print(f"Time for RidgeCV implementation SVD with joblib: {stop - start} seconds.")
 
 

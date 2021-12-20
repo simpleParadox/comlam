@@ -6,8 +6,7 @@ import pickle as pk
 import matplotlib.pyplot as plt
 import os
 import glob
-import regex as re
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import Ridge, RidgeCV
 import time
 
 from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out
@@ -63,7 +62,7 @@ def create_w2v_mappings():
 
 
 
-def cross_validation_nested(part=None, mean_removed=False):
+def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]
     :return: 2v2 accuracy for the participant.
@@ -77,10 +76,10 @@ def cross_validation_nested(part=None, mean_removed=False):
     if type(part) == list:
         participants = part
     else:
-        participants = [1003]#, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
+        participants = [1017]#, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
     for participant in participants:
         print(participant)
-        x, y, stims = load_nifti_and_w2v(1012, mean_removed=mean_removed)
+        x, y, stims = load_nifti_and_w2v(1017, avg_w2v=avg_w2v, mean_removed=mean_removed)
         print('loaded data')
 
 
@@ -100,7 +99,9 @@ def cross_validation_nested(part=None, mean_removed=False):
         start = time.time()
         for train_index, test_index in zip(train_indices, test_indices):
             
-            print('Iteration: ', i)
+            
+            if i % 100 == 0:
+                print('Iteration: ', i)
             i += 1
 
             # model = Ridge(solver='cholesky')
@@ -110,9 +111,11 @@ def cross_validation_nested(part=None, mean_removed=False):
             # preds = clf.predict(x[test_index])
         
 
-            ridge = Ridge(solver='cholesky', alpha=100000)
-            ridge.fit(x_scaled[train_index], y[train_index])
-            preds = ridge.predict(x_scaled[test_index])
+            alphas = [0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1, 5, 10]
+            # Uses LOOCV by default to tune hyperparameter tuning.
+            cv_model = RidgeCV(alphas=alphas, gcv_mode='svd', scoring='neg_mean_squared_error', alpha_per_target=True)
+            cv_model.fit(x_train, y_train)
+            preds = cv_model.predict(x_scaled[test_index])
             
 
             # Store the preds in an array and all the ytest with the indices.
@@ -130,7 +133,7 @@ def cross_validation_nested(part=None, mean_removed=False):
     print(participant_accuracies)
 
 
-cross_validation_nested()
+cross_validation_nested(avg_w2v=True, mean_removed=False)
 # # parts = [1004, 1007, 1008, 1010, 1013, 1016, 1017, 1019, 1024]
 # parts = [1024]
 # for p in parts:
