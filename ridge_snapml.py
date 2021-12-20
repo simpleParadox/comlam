@@ -8,7 +8,6 @@ from functions import load_nifti_and_w2v, two_vs_two, leave_two_out
 from snapml import LinearRegression
 import time
 
-
 def cv_snapml(part=None):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]
