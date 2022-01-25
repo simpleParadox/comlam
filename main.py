@@ -91,7 +91,10 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
         # Load the nifti, the word vectors, and the stim and then leave out two samples on which you'll do 2v2.
 
         # Write a function to do the leave-two-out cv. This returns the train and test indices.
+
         train_indices, test_indices = leave_two_out(stims)
+
+        ## [[[1,2,4,5], [6,7] ], [[2,4,5,6], [1, 7]], ....   ]
         print('Decided indices')
         preds_list = []
         y_test_list = []
@@ -110,11 +113,12 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
             # clf.fit(x[train_index], y[train_index])
             # preds = clf.predict(x[test_index])
         
-
             alphas = [0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1, 5, 10]
             # Uses LOOCV by default to tune hyperparameter tuning.
             cv_model = RidgeCV(alphas=alphas, gcv_mode='svd', scoring='neg_mean_squared_error', alpha_per_target=True)
-            cv_model.fit(x_train, y_train)
+
+            
+            cv_model.fit(x_scaled[train_index], y[train_index])
             preds = cv_model.predict(x_scaled[test_index])
             
 
@@ -133,7 +137,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
     print(participant_accuracies)
 
 
-cross_validation_nested(avg_w2v=True, mean_removed=False)
+cross_validation_nested(avg_w2v=False, mean_removed=False)
 # # parts = [1004, 1007, 1008, 1010, 1013, 1016, 1017, 1019, 1024]
 # parts = [1024]
 # for p in parts:
