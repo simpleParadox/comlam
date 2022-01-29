@@ -59,9 +59,6 @@ def create_w2v_mappings():
 
 
 
-
-
-
 def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]
@@ -101,8 +98,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
         i = 0
         start = time.time()
         for train_index, test_index in zip(train_indices, test_indices):
-            
-            
+
             if i % 100 == 0:
                 print('Iteration: ', i)
             i += 1
@@ -112,15 +108,14 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
             # clf = GridSearchCV(model, param_grid=ridge_params, n_jobs=-1, scoring='neg_mean_squared_error', cv=8, verbose=5) # Setting cv=10 so that 4 samples are used for validation.
             # clf.fit(x[train_index], y[train_index])
             # preds = clf.predict(x[test_index])
-        
+
+
             alphas = [0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1, 5, 10]
             # Uses LOOCV by default to tune hyperparameter tuning.
             cv_model = RidgeCV(alphas=alphas, gcv_mode='svd', scoring='neg_mean_squared_error', alpha_per_target=True)
 
-            
             cv_model.fit(x_scaled[train_index], y[train_index])
             preds = cv_model.predict(x_scaled[test_index])
-            
 
             # Store the preds in an array and all the ytest with the indices.
 
@@ -138,9 +133,13 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
 
 
 cross_validation_nested(avg_w2v=False, mean_removed=False)
-# # parts = [1004, 1007, 1008, 1010, 1013, 1016, 1017, 1019, 1024]
-# parts = [1024]
+# parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
+# # parts = [1016]
 # for p in parts:
 #     print("Participant: ", p)
-#     store_trs_spm(p, 'sentiment', remove_mean=False)
+#     try:
+#         store_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True)
+#     except:
+#         print("Participant not found or something")
+#         pass
 # store_trs_fsl(1012, 'sentiment', remove_mean=False)

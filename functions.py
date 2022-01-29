@@ -7,7 +7,7 @@ from scipy.spatial.distance import cosine
 import platform
 import glob
 
-def store_trs_spm(participant, task, remove_mean=False):
+def store_trs_spm(participant, task, remove_mean=False, avg_tr=False):
 
     """
     Stores the avg and concatenated files for each stimuli for each participant.
@@ -57,7 +57,7 @@ def store_trs_spm(participant, task, remove_mean=False):
         mean_voxels_b = np.mean(nifti_run_2_all_files, axis=0)
 
 
-    concat_tr = {}
+    result_tr = {}
     counter = 0
     for row in grouped_metadata:
         print(counter)
@@ -140,11 +140,15 @@ def store_trs_spm(participant, task, remove_mean=False):
         # Average and concatenate.
         first_point_avg = np.mean(first_point_nifti_files, axis=0)
         second_point_avg = np.mean(second_point_nifti_files, axis=0)
-        concat_tr[stim] = np.concatenate((first_point_avg, second_point_avg), axis=1)
+        if avg_tr:
+            result_tr[stim] = np.mean((first_point_avg, second_point_avg), axis=0)
+        else:
+            result_tr[stim] = np.concatenate((first_point_avg, second_point_avg), axis=1)
+    print(f'Participant {participant}: saved.')
     if remove_mean == True:
-        np.savez_compressed(f"G:\comlam\spm\sentiment\P{participant}_mean_removed.npz", concat_tr)
+        np.savez_compressed(f"G:\comlam\spm\sentiment\\avg_trs\\P{participant}_avg_mean_removed.npz", result_tr)
     else:
-        np.savez_compressed(f"G:\comlam\spm\sentiment\P{participant}.npz", concat_tr)
+        np.savez_compressed(f"G:\comlam\spm\sentiment\\avg_trs\\P{participant}_avg.npz", result_tr)
 
 
 def store_trs_fsl(participant, task, remove_mean=False):
