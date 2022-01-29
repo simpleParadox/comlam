@@ -324,7 +324,7 @@ def map_stimuli_w2v(participant):
     return stims_two_words
 
 
-def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False):
+def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False):
     """
 
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
@@ -333,7 +333,7 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False):
     system = platform.system()
     if system == 'Windows':
         # For local development.
-        path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\spm\\sentiment"
+        path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\spm\\sentiment\\"
         if avg_w2v == False:
             w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
         else:
@@ -347,9 +347,17 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False):
             w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
 
     if mean_removed == True:
-        nifti_path = path + f"P{participant}_mean_removed.npz"
+        if load_avg_trs:
+            nifti_path = path + f"avg_trs/P{participant}_avg_mean_removed.npz"
+        else:
+            nifti_path = path + f"P{participant}_mean_removed.npz"
+
     else:
-        nifti_path = path + f"P{participant}.npz"
+        if load_avg_trs:
+            nifti_path = path + f"avg_trs/P{participant}_avg.npz"
+        else:
+            nifti_path = path + f"P{participant}.npz"
+
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
 
 

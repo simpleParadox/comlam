@@ -76,7 +76,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
         participants = [1017]#, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
     for participant in participants:
         print(participant)
-        x, y, stims = load_nifti_and_w2v(1017, avg_w2v=avg_w2v, mean_removed=mean_removed)
+        x, y, stims = load_nifti_and_w2v(1017, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=True)
         print('loaded data')
 
 
