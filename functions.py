@@ -7,6 +7,153 @@ from scipy.spatial.distance import cosine
 import platform
 import glob
 
+def store_masked_trs_spm(participant, task, remove_mean=False, avg_tr=False):
+    """
+
+    :param participant: The number of participant. Accepts a single integer. E.g. 1003.
+    :param task: string, sentiment or synonym.
+    :param remove_mean: whether to subtract the mean fMRI data from each functional image or not.
+    :param avg_tr: If true - average the TRs, else - concatenate.
+    :return: None, but store the result in a directory.
+    """
+    # participant = 1012  # Remove this when not testing.
+    # task = 'sentiment'
+
+    # Define the paths for GDrive.
+    spm_path = "E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\\"
+    participant_path = spm_path + "P" + str(participant) + "\\" + task + "\\"
+    tr_meta_path = "E:\Shared drives\Varshini_Brea\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
+    metadata = pd.read_excel(tr_meta_path)
+    run1_path = participant_path + "masked_r_run01\\"
+    run2_path = participant_path + "masked_r_run02\\"
+
+    # Select only the stimuli that has two words only.
+    ## Find the rows where the stim is more than two words.
+    non_two_word_phrases_idx = [i for i in range(len(metadata)) if metadata.iloc[i, 0].count(' ') > 1]
+    two_stim_metadata = metadata.drop(labels=non_two_word_phrases_idx, axis=0)
+
+    # First group the TR_metadata by stimuli.
+    grouped_metadata = two_stim_metadata.groupby(['words'])
+
+    # Load all the fMRI data to remove the mean voxels from each of the stored fMRI file.
+    nifti_run_1_all_files = []
+    nifti_run_2_all_files = []
+    if remove_mean == True:
+        for file in glob.glob(run1_path + "*.nii.npz"):
+            nifti = np.load(file, allow_pickle=True)['arr_0']
+            nifti_run_1_all_files.append(nifti)
+
+        for file in glob.glob(run2_path + "*.nii.npz"):
+            nifti = np.load(file, allow_pickle=True)['arr_0']
+            nifti_run_2_all_files.append(nifti)
+
+        mean_voxels_a = np.mean(nifti_run_1_all_files, axis=0)
+        mean_voxels_b = np.mean(nifti_run_2_all_files, axis=0)
+
+    result_tr = {}
+    counter = 0
+    for row in grouped_metadata:
+        print(counter)
+        counter += 1
+        # 'row' is a tuple.
+        stim = row[0]
+        df = row[1]  # Second index is the dataframe for the stimulus.
+        runs = df['run'].values
+        nifti_idx = df['Nifti'].values
+
+        # Now do the retrieval of fMRI data here and averaging and concatenating.
+        j = 0
+        k = 1
+        first_point_nifti_files = []
+        second_point_nifti_files = []
+        while (j < 7 and k < 8):
+            run_j = runs[j]
+            nifti_j = int(nifti_idx[j])
+
+            run_k = runs[k]
+            nifti_k = int(nifti_idx[k])
+
+            left_j_1 = str(nifti_j).zfill(5)
+            left_j_2 = str(nifti_j).zfill(6)
+
+            left_k_1 = str(nifti_k).zfill(5)
+            left_k_2 = str(nifti_k).zfill(6)
+
+            # print("Nifti j", nifti_j)
+            # print('Nifti k', nifti_k)
+
+            if run_j == 1:
+                file_name = glob.glob(run1_path + f"*{left_j_1}-{left_j_2}-*.nii.npz")[0]
+                # print("Run j=1 ", file_name)
+                np_a_rs_j_1 = np.load(file_name, allow_pickle=True)['arr_0']
+                # Now store the file in an array.
+                # np_a_j_1 = np.transpose(data_j_1, (3, 0, 1, 2))
+                # np_a_rs_j_1 = np_a_j_1.reshape(np_a_j_1.shape[0], -1)
+                if remove_mean == True:
+                    np_a_rs_j_1 = np_a_rs_j_1 - mean_voxels_a
+                first_point_nifti_files.append(np_a_rs_j_1)
+            elif run_j == 2:
+                # Read from the 'run02; folder
+                file_name = glob.glob(run2_path + f"*{left_j_1}-{left_j_2}-*.nii.npz")[0]
+                # print("Run j=2 ", file_name)
+                np_a_rs_j_2 = np.load(file_name, allow_pickle=True)['arr_0']
+                # Now store the file in an array for later averaging.
+                # np_a_j_2 = np.transpose(data_j_2, (3, 0, 1, 2))
+                # np_a_rs_j_2 = np_a_j_2.reshape(np_a_j_2.shape[0], -1)
+                if remove_mean == True:
+                    np_a_rs_j_2 = np_a_rs_j_2 - mean_voxels_b
+                first_point_nifti_files.append(np_a_rs_j_2)
+
+            if run_k == 1:
+                file_name = glob.glob(run1_path + f"*{left_k_1}-{left_k_2}-*.nii.npz")[0]
+                # print("Run k=1 ", file_name)
+                np_a_rs_k_1 = np.load(file_name, allow_pickle=True)['arr_0']
+                # Now store the file in an array.
+                # np_b_k_1 = np.transpose(data_k_1, (3, 0, 1, 2))
+                # np_a_rs_k_1 = np_b_k_1.reshape(np_b_k_1.shape[0], -1)
+                if remove_mean == True:
+                    np_a_rs_k_1 = np_a_rs_k_1 - mean_voxels_a
+                second_point_nifti_files.append(np_a_rs_k_1)
+
+            elif run_k == 2:
+                file_name = glob.glob(run2_path + f"*{left_k_1}-{left_k_2}-*.nii.npz")[0]
+                # print("Run k=2 ", file_name)
+                np_a_rs_k_2 = np.load(file_name, allow_pickle=True)['arr_0']
+                # Now store the file in an array.
+                # np_a_k_2 = np.transpose(data_k_2, (3, 0, 1, 2))
+                # np_a_rs_k_2 = np_a_k_2.reshape(np_a_k_2.shape[0], -1)
+                if remove_mean == True:
+                    np_a_rs_k_2 = np_a_rs_k_2 - mean_voxels_b
+                second_point_nifti_files.append(np_a_rs_k_2)
+
+            j += 2
+            k += 2
+
+        # Average and concatenate.
+        first_point_avg = np.mean(first_point_nifti_files, axis=0)
+        second_point_avg = np.mean(second_point_nifti_files, axis=0)
+        if avg_tr:
+            result_tr[stim] = np.mean((first_point_avg, second_point_avg), axis=0)
+        else:
+            result_tr[stim] = np.concatenate((first_point_avg, second_point_avg))
+
+    print(f'Participant {participant}: saved.')
+    if remove_mean == True:
+        if avg_tr:
+            print("Average TRs mean removed.")
+            np.savez_compressed(f"G:\comlam\spm\sentiment\\masked\\avg_trs\\P{participant}_avg_mean_removed.npz", result_tr)
+        else:
+            print("Average TRs non mean removed.")
+            np.savez_compressed(f"G:\comlam\spm\sentiment\\masked\\concat_trs\\P{participant}_mean_removed.npz", result_tr)
+    else:
+        if avg_tr:
+            print("Average TRs non mean removed.")
+            np.savez_compressed(f"G:\comlam\spm\sentiment\\masked\\avg_trs\\P{participant}_avg.npz", result_tr)
+        else:
+            print("Concat TRs non mean removed.")
+            np.savez_compressed(f"G:\comlam\spm\sentiment\\masked\\concat_trs\\P{participant}.npz", result_tr)
+
+
 def store_trs_spm(participant, task, remove_mean=False, avg_tr=False):
 
     """
@@ -36,10 +183,8 @@ def store_trs_spm(participant, task, remove_mean=False, avg_tr=False):
     # First group the TR_metadata by stimuli.
     grouped_metadata = two_stim_metadata.groupby(['words'])
 
-    # Then each row and read corresponding file name.
 
     # Load all the fMRI data to remove the mean voxels from each of the stored fMRI file.
-
     nifti_run_1_all_files = []
     nifti_run_2_all_files = []
     if remove_mean == True:
@@ -324,7 +469,7 @@ def map_stimuli_w2v(participant):
     return stims_two_words
 
 
-def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False):
+def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False):
     """
 
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
@@ -340,7 +485,17 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
             w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_avg_dict.npz"
     elif system == 'Linux':
         # For Compute Canada development.
-        path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/"
+        if masked:
+            if load_avg_trs:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/avg_trs/"
+            else:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/concat_trs/"
+        else:
+            if load_avg_trs:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/avg_trs/"
+            else:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/"
+
         if avg_w2v == False:
             w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
         else:
@@ -348,19 +503,20 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
 
     if mean_removed == True:
         if load_avg_trs:
-            nifti_path = path + f"avg_trs/P{participant}_avg_mean_removed.npz"
+            print("Load avg TRs and mean removed")
+            nifti_path = path + f"P{participant}_avg_mean_removed.npz"
         else:
+            print("Load concat TRs and mean removed")
             nifti_path = path + f"P{participant}_mean_removed.npz"
-
     else:
         if load_avg_trs:
-            nifti_path = path + f"avg_trs/P{participant}_avg.npz"
+            print("Load avg TRs and non mean removed")
+            nifti_path = path + f"P{participant}_avg.npz"
         else:
+            print("Load concat TRs and non mean removed")
             nifti_path = path + f"P{participant}.npz"
 
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
-
-
     w2v_data = np.load(w2v_path, allow_pickle=True)['arr_0'].tolist()
 
     # Now map the nifti data to the corresponding concatenated w2v vectors.
