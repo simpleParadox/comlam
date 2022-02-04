@@ -478,7 +478,17 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
     system = platform.system()
     if system == 'Windows':
         # For local development.
-        path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\spm\\sentiment\\"
+        # path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\spm\\sentiment\\"
+        if masked:
+            if load_avg_trs:
+                path = "G:\comlam\spm\sentiment\masked\\avg_trs\\"
+            else:
+                path = "G:\comlam\spm\sentiment\masked\concat_trs\\"
+        else:
+            if load_avg_trs:
+                path = "G:\comlam\spm\sentiment\\avg_trs\\"
+            else:
+                path = "G:\comlam\spm\sentiment\\"
         if avg_w2v == False:
             w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
         else:
@@ -530,14 +540,14 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
     x_temp = np.array(x_data)
     y_temp = np.array(y_data)
 
-    x = np.reshape(x_temp, (x_temp.shape[0], x_temp.shape[2]))
+    # x = np.reshape(x_temp, (x_temp.shape[0], x_temp.shape[2]))
 
     # Also loading the stimuli phrases.
     stims = []
     for stim in nifti_data.keys():
         stims.append(stim)
 
-    return x, y_temp, stims
+    return x_temp, y_temp, stims
 
 def two_vs_two(preds, ytest):
     total_points = 0
