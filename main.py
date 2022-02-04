@@ -9,7 +9,7 @@ import glob
 from sklearn.linear_model import Ridge, RidgeCV
 import time
 
-from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out, store_masked_trs_spm
+from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out
 from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
@@ -59,10 +59,14 @@ def create_w2v_mappings():
 
 
 
-def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
+def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False):
     """
-    :param part: Accepts a list of participants. Example: [1003, 1006]
-    :return: 2v2 accuracy for the participant.
+    :param part: Accepts a list of participants. Example: [1003, 1006]. List of integers.
+    :avg_w2v: To predict avg w2v vectors or concat w2v vectors. Boolean.
+    :mean_removed: Whether to use mean removed data or not. Boolean.
+    :load_avg_trs: Whether to load avg_trs or concat_trs. Boolean.
+    :masked: Whether to use masked data or not. Boolean.
+    :return: None but prints 2v2 accuracy for the participant.
     """
     # Do ridge regression with GridSearchCV here.
     # Run the analysis for each participant here.
@@ -73,10 +77,11 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
     if type(part) == list:
         participants = part
     else:
-        participants = [1017]#, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
+        # participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
+        participants = [1004]
     for participant in participants:
         print(participant)
-        x, y, stims = load_nifti_and_w2v(1017, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=True)
+        x, y, stims = load_nifti_and_w2v(participant, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=load_avg_trs, masked=masked)
         print('loaded data')
 
 
@@ -132,13 +137,14 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False):
     print(participant_accuracies)
 
 
-# cross_validation_nested(avg_w2v=False, mean_removed=False)
+cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True)
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
-parts = [1008]
-for p in parts:
-    print("Participant: ", p)
-    # try:
-    store_masked_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=False)
-    # except Exception as e:
-    #     print("Participant not found or something: ", e)
+# # parts = [1016]
+# for p in parts:
+#     print("Participant: ", p)
+#     try:
+#         store_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True)
+#     except:
+#         print("Participant not found or something")
+#         pass
 # store_trs_fsl(1012, 'sentiment', remove_mean=False)
