@@ -324,7 +324,7 @@ def map_stimuli_w2v(participant):
     return stims_two_words
 
 
-def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False):
+def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False):
     """
 
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
@@ -340,7 +340,17 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
             w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_avg_dict.npz"
     elif system == 'Linux':
         # For Compute Canada development.
-        path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/"
+        if masked:
+            if load_avg_trs:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/avg_trs/"
+            else:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/concat_trs/"
+        else:
+            if load_avg_trs:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/avg_trs/"
+            else:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/"
+
         if avg_w2v == False:
             w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
         else:
@@ -348,14 +358,17 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
 
     if mean_removed == True:
         if load_avg_trs:
-            nifti_path = path + f"avg_trs/P{participant}_avg_mean_removed.npz"
+            print("Load avg TRs and mean removed")
+            nifti_path = path + f"P{participant}_avg_mean_removed.npz"
         else:
+            print("Load concat TRs and mean removed")
             nifti_path = path + f"P{participant}_mean_removed.npz"
-
     else:
         if load_avg_trs:
-            nifti_path = path + f"avg_trs/P{participant}_avg.npz"
+            print("Load avg TRs and non mean removed")
+            nifti_path = path + f"P{participant}_avg.npz"
         else:
+            print("Load concat TRs and non mean removed")
             nifti_path = path + f"P{participant}.npz"
 
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
