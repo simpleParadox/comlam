@@ -9,7 +9,7 @@ import glob
 from sklearn.linear_model import Ridge, RidgeCV
 import time
 
-from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out
+from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out, store_masked_trs_spm
 from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
@@ -137,14 +137,14 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
     print(participant_accuracies)
 
 
-cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True)
+# cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True)
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
-# # parts = [1016]
-# for p in parts:
-#     print("Participant: ", p)
-#     try:
-#         store_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True)
-#     except:
-#         print("Participant not found or something")
-#         pass
+parts = [1004, 1006, 1007]
+for p in parts:
+    print("Participant: ", p)
+    try:
+        store_masked_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True)
+    except:
+        print("Participant not found or something")
+        pass
 # store_trs_fsl(1012, 'sentiment', remove_mean=False)

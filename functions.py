@@ -471,7 +471,6 @@ def map_stimuli_w2v(participant):
 
 def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False):
     """
-
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
     :return: the nifti file for the participant and the corresponding condition.
     """
@@ -549,12 +548,14 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
 
     return x_temp, y_temp, stims
 
-def two_vs_two(preds, ytest):
+def two_vs_two(preds, ytest, store_cos_diff=False):
     total_points = 0
     points = 0
-    print(type(preds))
-    print(type(ytest))
-    j = 0
+    # print(type(preds))
+    # print(type(ytest))
+
+    cosine_diffs = []
+
     for pred, y_true in zip(preds, ytest):
 
         s_i_pred = pred[0].tolist()
@@ -576,9 +577,11 @@ def two_vs_two(preds, ytest):
 
         if dsii + dsjj <= dsij + dsji:
             points += 1
+            if store_cos_diff:
+                cosine_diffs.append(dsii + dsjj - dsij - dsji)
         total_points += 1
 
-    return points * 1.0 / total_points  # Multiplying by 1.0 for floating point conversion.
+    return points * 1.0 / total_points, cosine_diffs  # Multiplying by 1.0 for floating point conversion.
 
 def extended_2v2(y_test, preds):
     """
