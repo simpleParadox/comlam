@@ -59,7 +59,7 @@ def create_w2v_mappings():
 
 
 
-def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False):
+def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, store_cosine_diff=False):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]. List of integers.
     :avg_w2v: To predict avg w2v vectors or concat w2v vectors. Boolean.
@@ -73,6 +73,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
     print('Calling cross_validation_nested.')
 
     participant_accuracies = {}
+    cosine_diff_dict = {}
 
     if type(part) == list:
         participants = part
@@ -127,11 +128,15 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
             preds_list.append(preds)
             y_test_list.append(y[test_index])
 
-        accuracy = two_vs_two(preds_list, y_test_list)
+        accuracy, cosine_diff = two_vs_two(preds_list, y_test_list, store_cos_diff=store_cosine_diff)
+        cosine_diff_dict[participant] = cosine_diff
+
 
 
         participant_accuracies[participant] = accuracy
         print(participant_accuracies)
+        
+    np.savez_compressed("/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/debug_logs_files/cosine_diffs_2v2.npz", cosine_diff_dict)
     stop = time.time()
     print('Total time: ', stop - start)
     print(participant_accuracies)
@@ -143,7 +148,7 @@ parts = [1004, 1006, 1007]
 for p in parts:
     print("Participant: ", p)
     try:
-        store_masked_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True)
+        store_masked_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True, store_cosine_diff=True)
     except:
         print("Participant not found or something")
         pass
