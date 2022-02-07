@@ -59,7 +59,7 @@ def create_w2v_mappings():
 
 
 
-def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, store_cosine_diff=False):
+def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False ,store_cosine_diff=False):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]. List of integers.
     :avg_w2v: To predict avg w2v vectors or concat w2v vectors. Boolean.
@@ -82,7 +82,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
         participants = [1004]
     for participant in participants:
         print(participant)
-        x, y, stims = load_nifti_and_w2v(participant, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=load_avg_trs, masked=masked)
+        x, y, stims = load_nifti_and_w2v(participant, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=load_avg_trs, masked=masked, permuted=permuted)
         print('loaded data')
 
 
@@ -94,7 +94,6 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
         # Load the nifti, the word vectors, and the stim and then leave out two samples on which you'll do 2v2.
 
         # Write a function to do the leave-two-out cv. This returns the train and test indices.
-
         train_indices, test_indices = leave_two_out(stims)
 
         ## [[[1,2,4,5], [6,7] ], [[2,4,5,6], [1, 7]], ....   ]
@@ -135,21 +134,26 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
 
         participant_accuracies[participant] = accuracy
         print(participant_accuracies)
-        
-    np.savez_compressed("/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/debug_logs_files/cosine_diffs_2v2.npz", cosine_diff_dict)
+
+    if store_cosine_diff:
+        np.savez_compressed("/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/debug_logs_files/cosine_diffs_2v2.npz", cosine_diff_dict)
+    if permuted:
+        # Save the permutation test results.
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/results/permuted/P{participant}/{participant}_{timestr}.npz",participant_accuracies)
     stop = time.time()
     print('Total time: ', stop - start)
     print(participant_accuracies)
 
 
-# cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True)
+cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=True, store_cosine_diff=True)
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
-parts = [1004, 1006, 1007]
-for p in parts:
-    print("Participant: ", p)
-    try:
-        store_masked_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True, store_cosine_diff=True)
-    except:
-        print("Participant not found or something")
-        pass
+# parts = [1004, 1006, 1007]
+# for p in parts:
+#     print("Participant: ", p)
+#     try:
+#         store_masked_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True)
+#     except:
+#         print("Participant not found or something")
+#         pass
 # store_trs_fsl(1012, 'sentiment', remove_mean=False)

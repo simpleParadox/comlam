@@ -469,7 +469,7 @@ def map_stimuli_w2v(participant):
     return stims_two_words
 
 
-def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False):
+def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False):
     """
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
     :return: the nifti file for the participant and the corresponding condition.
@@ -539,7 +539,12 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
     x_temp = np.array(x_data)
     y_temp = np.array(y_data)
 
+
+    # The following line was for the unmasked data I think.
     # x = np.reshape(x_temp, (x_temp.shape[0], x_temp.shape[2]))
+
+    if permuted:
+        np.random.shuffle(y_temp)
 
     # Also loading the stimuli phrases.
     stims = []
