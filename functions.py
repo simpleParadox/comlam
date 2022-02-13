@@ -24,8 +24,8 @@ def store_masked_trs_spm(participant, task, remove_mean=False, avg_tr=False):
     participant_path = spm_path + "P" + str(participant) + "\\" + task + "\\"
     tr_meta_path = "E:\Shared drives\Varshini_Brea\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
     metadata = pd.read_excel(tr_meta_path)
-    run1_path = participant_path + "masked_r_run01\\"
-    run2_path = participant_path + "masked_r_run02\\"
+    run1_path = participant_path + "masked_w_run01\\"
+    run2_path = participant_path + "masked_w_run02\\"
 
     # Select only the stimuli that has two words only.
     ## Find the rows where the stim is more than two words.
@@ -83,8 +83,13 @@ def store_masked_trs_spm(participant, task, remove_mean=False, avg_tr=False):
             # print('Nifti k', nifti_k)
 
             if run_j == 1:
-                file_name = glob.glob(run1_path + f"*{left_j_1}-{left_j_2}-*.nii.npz")[0]
+                try:
+                    file_name = glob.glob(run1_path + f"*{left_j_1}-{left_j_2}-*.nii.npz")[0]
+                except:
+                    file_name = glob.glob(run1_path + f"*{left_j_1}-{left_j_2}-*.nii.npz")
                 # print("Run j=1 ", file_name)
+                # if type(file_name) == list:
+                #     file_name = file_name[0]
                 np_a_rs_j_1 = np.load(file_name, allow_pickle=True)['arr_0']
                 # Now store the file in an array.
                 # np_a_j_1 = np.transpose(data_j_1, (3, 0, 1, 2))
@@ -94,8 +99,13 @@ def store_masked_trs_spm(participant, task, remove_mean=False, avg_tr=False):
                 first_point_nifti_files.append(np_a_rs_j_1)
             elif run_j == 2:
                 # Read from the 'run02; folder
-                file_name = glob.glob(run2_path + f"*{left_j_1}-{left_j_2}-*.nii.npz")[0]
+                try:
+                    file_name = glob.glob(run2_path + f"*{left_j_1}-{left_j_2}-*.nii.npz")[0]
+                except:
+                    file_name = glob.glob(run2_path + f"*{left_j_1}-{left_j_2}-*.nii.npz")
                 # print("Run j=2 ", file_name)
+                # if type(file_name) == list:
+                #     file_name = file_name[0]
                 np_a_rs_j_2 = np.load(file_name, allow_pickle=True)['arr_0']
                 # Now store the file in an array for later averaging.
                 # np_a_j_2 = np.transpose(data_j_2, (3, 0, 1, 2))
@@ -105,7 +115,12 @@ def store_masked_trs_spm(participant, task, remove_mean=False, avg_tr=False):
                 first_point_nifti_files.append(np_a_rs_j_2)
 
             if run_k == 1:
-                file_name = glob.glob(run1_path + f"*{left_k_1}-{left_k_2}-*.nii.npz")[0]
+                try:
+                    file_name = glob.glob(run1_path + f"*{left_k_1}-{left_k_2}-*.nii.npz")[0]
+                except:
+                    file_name = glob.glob(run1_path + f"*{left_k_1}-{left_k_2}-*.nii.npz")
+                # if type(file_name) == list:
+                #     file_name = file_name[0]
                 # print("Run k=1 ", file_name)
                 np_a_rs_k_1 = np.load(file_name, allow_pickle=True)['arr_0']
                 # Now store the file in an array.
@@ -116,8 +131,13 @@ def store_masked_trs_spm(participant, task, remove_mean=False, avg_tr=False):
                 second_point_nifti_files.append(np_a_rs_k_1)
 
             elif run_k == 2:
-                file_name = glob.glob(run2_path + f"*{left_k_1}-{left_k_2}-*.nii.npz")[0]
+                try:
+                    file_name = glob.glob(run2_path + f"*{left_k_1}-{left_k_2}-*.nii.npz")[0]
+                except:
+                    file_name = glob.glob(run2_path + f"*{left_k_1}-{left_k_2}-*.nii.npz")
                 # print("Run k=2 ", file_name)
+                # if type(file_name) == list:
+                #     file_name = file_name[0]
                 np_a_rs_k_2 = np.load(file_name, allow_pickle=True)['arr_0']
                 # Now store the file in an array.
                 # np_a_k_2 = np.transpose(data_k_2, (3, 0, 1, 2))
@@ -141,17 +161,17 @@ def store_masked_trs_spm(participant, task, remove_mean=False, avg_tr=False):
     if remove_mean == True:
         if avg_tr:
             print("Average TRs mean removed.")
-            np.savez_compressed(f"G:\comlam\spm\sentiment\\masked\\avg_trs\\P{participant}_avg_mean_removed.npz", result_tr)
+            np.savez_compressed(f"data/spm/sentiment/masked/rf/avg_trs\\P{participant}_avg_mean_removed.npz", result_tr)
         else:
             print("Average TRs non mean removed.")
-            np.savez_compressed(f"G:\comlam\spm\sentiment\\masked\\concat_trs\\P{participant}_mean_removed.npz", result_tr)
+            np.savez_compressed(f"data/spm/sentiment/masked/rf/concat_trs\\P{participant}_mean_removed.npz", result_tr)
     else:
         if avg_tr:
             print("Average TRs non mean removed.")
-            np.savez_compressed(f"G:\comlam\spm\sentiment\\masked\\avg_trs\\P{participant}_avg.npz", result_tr)
+            np.savez_compressed(f"/data/spm\sentiment\\masked\\wrf\\avg_trs\\P{participant}_avg.npz", result_tr)
         else:
             print("Concat TRs non mean removed.")
-            np.savez_compressed(f"G:\comlam\spm\sentiment\\masked\\concat_trs\\P{participant}.npz", result_tr)
+            np.savez_compressed(f"/data/spm\sentiment\\masked\\wrf\\concat_trs\\P{participant}.npz", result_tr)
 
 
 def store_trs_spm(participant, task, remove_mean=False, avg_tr=False):
@@ -291,9 +311,9 @@ def store_trs_spm(participant, task, remove_mean=False, avg_tr=False):
             result_tr[stim] = np.concatenate((first_point_avg, second_point_avg), axis=1)
     print(f'Participant {participant}: saved.')
     if remove_mean == True:
-        np.savez_compressed(f"G:\comlam\spm\sentiment\\avg_trs\\P{participant}_avg_mean_removed.npz", result_tr)
+        np.savez_compressed(f"/data/spm\sentiment\\avg_trs\\P{participant}_avg_mean_removed.npz", result_tr)
     else:
-        np.savez_compressed(f"G:\comlam\spm\sentiment\\avg_trs\\P{participant}_avg.npz", result_tr)
+        np.savez_compressed(f"/data/spm\sentiment\\avg_trs\\P{participant}_avg.npz", result_tr)
 
 
 def store_trs_fsl(participant, task, remove_mean=False):
@@ -480,14 +500,14 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
         # path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\spm\\sentiment\\"
         if masked:
             if load_avg_trs:
-                path = "G:\comlam\spm\sentiment\masked\\avg_trs\\"
+                path = "data/spm/sentiment/masked/rf/avg_trs\\"
             else:
-                path = "G:\comlam\spm\sentiment\masked\concat_trs\\"
+                path = "data/spm/sentiment/masked/rf/concat_trs\\"
         else:
             if load_avg_trs:
-                path = "G:\comlam\spm\sentiment\\avg_trs\\"
+                path = "/data/spm\sentiment\\avg_trs\\"
             else:
-                path = "G:\comlam\spm\sentiment\\"
+                path = "/data/spm\sentiment\\"
         if avg_w2v == False:
             w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
         else:

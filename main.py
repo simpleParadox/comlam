@@ -146,14 +146,14 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
     print(participant_accuracies)
 
 
-cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=True, store_cosine_diff=True)
+# cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=True, store_cosine_diff=True)
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
-# parts = [1004, 1006, 1007]
-# for p in parts:
-#     print("Participant: ", p)
-#     try:
-#         store_masked_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True)
-#     except:
-#         print("Participant not found or something")
-#         pass
+parts = [1003, 1006, 1008, 1010]
+for p in parts:
+    print("Participant: ", p)
+    # try:
+    store_masked_trs_spm(p, 'sentiment', remove_mean=False, avg_tr=True)
+    # except Exception as e:
+    #     print("Participant not found or something: ", e)
+    #     pass
 # store_trs_fsl(1012, 'sentiment', remove_mean=False)
