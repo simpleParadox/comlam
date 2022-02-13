@@ -79,7 +79,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
         participants = part
     else:
         # participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
-        participants = [1004]
+        participants = [1016]
     for participant in participants:
         print(participant)
         x, y, stims = load_nifti_and_w2v(participant, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=load_avg_trs, masked=masked, permuted=permuted)
@@ -146,7 +146,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
     print(participant_accuracies)
 
 
-cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=True, store_cosine_diff=True)
+cross_validation_nested(avg_w2v=True, mean_removed=False, load_avg_trs=True, masked=True, permuted=True, store_cosine_diff=False)
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
 # parts = [1004, 1006, 1007]
 # for p in parts:
