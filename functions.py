@@ -489,7 +489,7 @@ def map_stimuli_w2v(participant):
     return stims_two_words
 
 
-def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False):
+def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False, nifti_type='rf'):
     """
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
     :return: the nifti file for the participant and the corresponding condition.
@@ -500,9 +500,9 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
         # path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\spm\\sentiment\\"
         if masked:
             if load_avg_trs:
-                path = "data/spm/sentiment/masked/rf/avg_trs\\"
+                path = f"data/spm/sentiment/masked/{nifti_type}/avg_trs\\"
             else:
-                path = "data/spm/sentiment/masked/rf/concat_trs\\"
+                path = f"data/spm/sentiment/masked/{nifti_type}/concat_trs\\"
         else:
             if load_avg_trs:
                 path = "/data/spm\sentiment\\avg_trs\\"
@@ -516,9 +516,9 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
         # For Compute Canada development.
         if masked:
             if load_avg_trs:
-                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/avg_trs/"
+                path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/{nifti_type}/avg_trs/"
             else:
-                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/concat_trs/"
+                path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/{nifti_type}/concat_trs/"
         else:
             if load_avg_trs:
                 path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/avg_trs/"
