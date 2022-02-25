@@ -60,7 +60,7 @@ def create_w2v_mappings():
 
 
 
-def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False ,store_cosine_diff=False,
+def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False ,store_cosine_diff=False, nifti_type='rf',
                             beta=True, beta_mask_type='gm'):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]. List of integers.
@@ -149,16 +149,16 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
     print(participant_accuracies)
 
 
-cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=True, store_cosine_diff=False,
+cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=True, store_cosine_diff=False, nifti_type='wrf',
                         beta=True, beta_mask_type='gm')
 
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
 # parts = [1003, 1006, 1008, 1010]
 parts = [1016]
-for p in parts:
-    print("Participant: ", p)
-    # try:
-    store_betas_spm(p, 'sentiment', mask_type='gm')
+# for p in parts:
+#     print("Participant: ", p)
+#     # try:
+#     store_betas_spm(p, 'sentiment', mask_type='gm')
     # except Exception as e:
     #     print("Participant not found or something: ", e)
     #     pass
