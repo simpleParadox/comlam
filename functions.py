@@ -7,6 +7,47 @@ from scipy.spatial.distance import cosine
 import platform
 import glob
 
+def store_betas_spm(participant, task='sentiment', mask_type='gm'):
+    """
+
+    :param participant: The participant for which preprocessing needs to be done.
+    :param task: 'sentiment' or 'synonym', default is 'sentiment'
+    :param mask_type: Type of mask. 'gm' for gray matter. 'roi' for region of interest.
+    :return: None but stores the processed .npz file to disk.
+    """
+
+    spm_path = "E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\\"
+    participant_path = spm_path + "P" + str(participant) + "\\" + task + "\\"
+    mask_path = participant_path + f"betas_concat_RPfile_{mask_type}Mask\\"
+    conditions_mapping = participant_path + f"multCondnsP{participant}.xlsx"
+
+    # Read the conditions mapping file.
+    conditions_files = pd.read_excel(conditions_mapping)
+
+    conditions_map_grouped = conditions_files.groupby(["Beta"])
+
+    stims_dict = {}
+    for row in conditions_map_grouped:
+        stims_dict[int(row[0])] = row[1]['words'].values.tolist()[0]
+
+
+    # beta_maps_to_nifti = conditions_files['Beta'].dropna().values
+    nifti_dict = {}
+    for file_number in stims_dict.keys():
+        padded_file_number = str(file_number).zfill(4)
+        file = glob.glob(mask_path + f"*{padded_file_number}.nii")
+        f = img.get_data(file)
+        beta = np.array(f)
+        beta_transposed = np.transpose(beta, (3, 0, 1, 2))
+        beta_reshaped = beta_transposed.reshape(beta_transposed.shape[0], -1)
+        # Now drop nan.
+        beta_no_nan = beta_reshaped[~np.isnan(beta_reshaped)]
+        nifti_dict[stims_dict[file_number]] = beta_no_nan
+
+    np.savez_compressed(f"G:\comlam\data\spm\sentiment\masked\\beta_weights\\beta_gm\\P{participant}.npz", nifti_dict)
+
+
+
 def store_masked_trs_spm(participant, task, remove_mean=False, avg_tr=False):
     """
 
@@ -40,10 +81,14 @@ def store_masked_trs_spm(participant, task, remove_mean=False, avg_tr=False):
     nifti_run_2_all_files = []
     if remove_mean == True:
         for file in glob.glob(run1_path + "*.nii.npz"):
+            print("removing mean")
+            print(file)
             nifti = np.load(file, allow_pickle=True)['arr_0']
             nifti_run_1_all_files.append(nifti)
 
         for file in glob.glob(run2_path + "*.nii.npz"):
+            print("removing mean")
+            print(file)
             nifti = np.load(file, allow_pickle=True)['arr_0']
             nifti_run_2_all_files.append(nifti)
 
@@ -489,7 +534,8 @@ def map_stimuli_w2v(participant):
     return stims_two_words
 
 
-def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False):
+def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False,
+                       beta=True, beta_mask_type='gm'):
     """
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
     :return: the nifti file for the participant and the corresponding condition.
@@ -515,6 +561,9 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
     elif system == 'Linux':
         # For Compute Canada development.
         if masked:
+            if beta:
+                # Load beta weights.
+                beta_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/beta_weights/"
             if load_avg_trs:
                 path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/avg_trs/"
             else:
@@ -530,20 +579,24 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
         else:
             w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
 
-    if mean_removed == True:
-        if load_avg_trs:
-            print("Load avg TRs and mean removed")
-            nifti_path = path + f"P{participant}_avg_mean_removed.npz"
-        else:
-            print("Load concat TRs and mean removed")
-            nifti_path = path + f"P{participant}_mean_removed.npz"
+
+    if beta:
+        nifti_path = beta_path + f"beta_{beta_mask_type}/"
     else:
-        if load_avg_trs:
-            print("Load avg TRs and non mean removed")
-            nifti_path = path + f"P{participant}_avg.npz"
+        if mean_removed == True:
+            if load_avg_trs:
+                print("Load avg TRs and mean removed")
+                nifti_path = path + f"P{participant}_avg_mean_removed.npz"
+            else:
+                print("Load concat TRs and mean removed")
+                nifti_path = path + f"P{participant}_mean_removed.npz"
         else:
-            print("Load concat TRs and non mean removed")
-            nifti_path = path + f"P{participant}.npz"
+            if load_avg_trs:
+                print("Load avg TRs and non mean removed")
+                nifti_path = path + f"P{participant}_avg.npz"
+            else:
+                print("Load concat TRs and non mean removed")
+                nifti_path = path + f"P{participant}.npz"
 
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
     w2v_data = np.load(w2v_path, allow_pickle=True)['arr_0'].tolist()
