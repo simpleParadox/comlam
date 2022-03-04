@@ -2,9 +2,12 @@ import pandas as pd
 import numpy as np
 from scipy.io import savemat
 
-participant = '1016'
+participant = '1004'
 
-trs_to_use = pd.read_excel(f"E:\Shared drives\Varshini_Brea\CoMLaM\\{participant}_TRsToUse.xlsx")
+# Mac path
+trs_to_use = pd.read_excel(f"/Users/simpleparadox/Documents/SharedDrives/CoMLaM/{participant}_TRsToUse.xlsx")
+# Windows path
+# trs_to_use = pd.read_excel(f"E:\Shared drives\Varshini_Brea\CoMLaM\\{participant}_TRsToUse.xlsx")
 
 names = sorted(set(trs_to_use["words"].values.tolist()))
 
@@ -30,8 +33,11 @@ for name in names:
     run_1_onsets.append(stim_onsets_run_1)
     run_2_onsets.append(stim_onsets_run_2)
 
-    run_1_durations.append(np.zeros(len(stim_onsets_run_1)).tolist())
-    run_2_durations.append(np.zeros(len(stim_onsets_run_2)).tolist())
+    # run_1_durations.append(np.zeros(len(stim_onsets_run_1)).tolist())
+    # run_2_durations.append(np.zeros(len(stim_onsets_run_2)).tolist())
+
+    run_1_durations.append(0)
+    run_2_durations.append(0)
 
 
 mdict1['onsets'] = run_1_onsets
