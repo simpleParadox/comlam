@@ -14,8 +14,11 @@ def beta_to_npz(participant):
     # Define paths
     # Mac path
     # Mac path -> Don't forget to change user.
-    local_participant_path = f"/Users/simpleparadox/Documents/comlam_raw/P{participant}/study/1st_Level/"
-    local_participant_study_path = f"/Users/simpleparadox/Documents/comlam_raw/P{participant}/study/"
+    # local_participant_path = f"/Users/simpleparadox/Documents/comlam_raw/P{participant}/study/1st_Level/"
+    # local_participant_study_path = f"/Users/simpleparadox/Documents/comlam_raw/P{participant}/study/"
+
+    remote_participant_path = f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/sentiment/betas_concat_RPfile_roiMask/"
+    remote_participant_study_path = f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/sentiment/"
     multCondnsFile = pd.read_excel(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/sentiment/multCondnsP{participant}.xlsx")
 
     # Windows path
@@ -32,9 +35,11 @@ def beta_to_npz(participant):
     beta_dict = {}
     for beta in beta_numbers_list:
         file_number = str(int(beta)).zfill(4)
-        f = glob.glob(local_participant_path + f"*{file_number}.nii")
+        print(file_number)
+        f = glob.glob(remote_participant_path + f"*{file_number}.nii")
 
         # Now get the data and convert to numpy.
+        print(f)
         nifti = np.array(get_data(f[0]))
         nifti = nifti[~np.isnan(nifti)]
         beta_dict[sorted_stims[stim_index]] = nifti
@@ -43,7 +48,7 @@ def beta_to_npz(participant):
 
     # Now save the beta_dict as an .npz array.
     # The result will be later stored on compute canada on which the decoding will be done.
-    np.savez_compressed(local_participant_study_path + f"P{participant}_gm_beta_dict.npz", beta_dict)
+    np.savez_compressed(remote_participant_study_path + f"P{participant}_roi_beta_dict.npz", beta_dict)
 
 
-beta_to_npz(1004)
+beta_to_npz(1019)
