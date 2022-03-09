@@ -154,7 +154,7 @@ cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, m
 
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
 # parts = [1003, 1006, 1008, 1010]
-parts = [1016]
+# parts = [1016]
 # for p in parts:
 #     print("Participant: ", p)
 #     # try:
