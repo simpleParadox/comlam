@@ -44,7 +44,7 @@ def store_betas_spm(participant, task='sentiment', mask_type='gm'):
         beta_no_nan = beta_reshaped[~np.isnan(beta_reshaped)]
         nifti_dict[stims_dict[file_number]] = beta_no_nan
 
-    np.savez_compressed(f"G:\comlam\data\spm\sentiment\masked\\beta_weights\\beta_gm\\P{participant}.npz", nifti_dict)
+    np.savez_compressed(f"G:\comlam\data\spm\sentiment\masked\\beta_weights\\beta_{mask_type}Mask\\P{participant}.npz", nifti_dict)
 
 
 
@@ -581,7 +581,7 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
 
 
     if beta:
-        nifti_path = beta_path + f"beta_{beta_mask_type}/"
+        nifti_path = beta_path + f"beta_{beta_mask_type}Mask/P{participant}.npz"
     else:
         if mean_removed == True:
             if load_avg_trs:
