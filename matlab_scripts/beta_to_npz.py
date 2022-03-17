@@ -14,17 +14,17 @@ def beta_to_npz(participant):
     # Define paths
     # Mac path
     # Mac path -> Don't forget to change user.
-    # local_participant_path = f"/Users/simpleparadox/Documents/comlam_raw/P{participant}/study/1st_Level/"
+    local_participant_path = f"/Users/simpleparadox/Documents/comlam_raw/P{participant}/study/roi_beta_1.97_durns/"
     # local_participant_study_path = f"/Users/simpleparadox/Documents/comlam_raw/P{participant}/study/"
 
     # remote_participant_path = f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/sentiment/betas_concat_RPfile_roi/"
-    # remote_participant_study_path = f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/sentiment/"
-    # multCondnsFile = pd.read_excel(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/sentiment/multCondnsP{participant}.xlsx")
+    remote_participant_study_path = f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/sentiment/"
+    multCondnsFile = pd.read_excel(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/sentiment/multCondnsP{participant}.xlsx")
 
     # Windows path
-    remote_participant_path = f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\sentiment\\betas_concat_RPfile_roiMask_MANUAL_nonZeroDurns/"
-    remote_participant_study_path = f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\sentiment\\"
-    multCondnsFile = pd.read_excel(f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\sentiment\\multCondnsP{participant}.xlsx")
+    # remote_participant_path = f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\sentiment\\betas_concat_RPfile_roiMask_MANUAL_nonZeroDurns/"
+    # remote_participant_study_path = f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\sentiment\\"
+    # multCondnsFile = pd.read_excel(f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\sentiment\\multCondnsP{participant}.xlsx")
 
     beta_file_numbers = multCondnsFile['Beta']
     beta_file_numbers = beta_file_numbers.dropna().values
@@ -38,7 +38,7 @@ def beta_to_npz(participant):
     for beta in beta_numbers_list:
         file_number = str(int(beta)).zfill(4)
         print(file_number)
-        f = glob.glob(remote_participant_path + f"*{file_number}.nii")
+        f = glob.glob(local_participant_path + f"*{file_number}.nii")
 
         # Now get the data and convert to numpy.
         print(f)
@@ -50,7 +50,7 @@ def beta_to_npz(participant):
 
     # Now save the beta_dict as an .npz array.
     # The result will be later stored on compute canada on which the decoding will be done.
-    np.savez_compressed(remote_participant_study_path + f"P{participant}_roi_beta_dict_manual_nonzerodurns.npz", beta_dict)
+    np.savez_compressed(remote_participant_study_path + f"P{participant}_roi_beta_dict_1_97_durns.npz", beta_dict)
 
 
-beta_to_npz(1024)
+beta_to_npz(1004)

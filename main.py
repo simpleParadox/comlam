@@ -11,7 +11,7 @@ import time
 
 from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, \
     two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out, store_masked_trs_spm, store_betas_spm
-from gensim.models import KeyedVectors
+# from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
 from sklearn.preprocessing import StandardScaler
@@ -81,7 +81,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
         participants = part
     else:
         # participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
-        participants = [1016]
+        participants = [1004]
     for participant in participants:
         print(participant)
         x, y, stims = load_nifti_and_w2v(participant, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=load_avg_trs, masked=masked, permuted=permuted,
@@ -149,8 +149,8 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
     print(participant_accuracies)
 
 
-cross_validation_nested(avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=True, store_cosine_diff=False, nifti_type='wrf',
-                        beta=True, beta_mask_type='gm')
+cross_validation_nested(avg_w2v=True, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
+                        beta=True, beta_mask_type='roi')
 
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
 # parts = [1003, 1006, 1008, 1010]

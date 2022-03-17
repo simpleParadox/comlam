@@ -4,10 +4,14 @@ from scipy.io import savemat
 import os
 
 # participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
-participants = [1024]
+participants = [1004]
 
 for participant in participants:
-    trs_to_use = pd.read_excel(f"E:\Shared drives\Varshini_Brea\CoMLaM\\Preprocessed\\SPM\\P{participant}\\sentiment\\multCondnsP{participant}.xlsx")
+    # Windows path.
+    # trs_to_use = pd.read_excel(f"E:\Shared drives\Varshini_Brea\CoMLaM\\Preprocessed\\SPM\\P{participant}\\sentiment\\multCondnsP{participant}.xlsx")
+
+    # Mac path
+    trs_to_use = pd.read_excel(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/sentiment/multCondnsP{participant}.xlsx")
 
     names = sorted(set(trs_to_use["words"].values.tolist()))
 
@@ -36,7 +40,7 @@ for participant in participants:
 
         # run_1_durations.append(np.zeros(len(stim_onsets_run_1)).tolist())
         # run_2_durations.append(np.zeros(len(stim_onsets_run_2)).tolist())
-        run_1_durations.append(0.0)
+        run_1_durations.append(1.97)
 
 
     mdict1['onsets'] = run_1_onsets
@@ -45,9 +49,10 @@ for participant in participants:
     mdict1['durations'] = run_1_durations
     # mdict2['durations'] = run_2_durations
 
-    if not os.path.exists(f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\matlab_scripts"):
-        os.makedirs(f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\matlab_scripts")
+    # if not os.path.exists(f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\matlab_scripts"):
+    #     os.makedirs(f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\matlab_scripts")
 
 
-    savemat(f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\matlab_scripts\\p{participant}_multi_conds_fmri_spec_run_concat.mat", mdict1)
+    # savemat(f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\matlab_scripts\\p{participant}_multi_conds_fmri_spec_run_concat_1.97_durns.mat", mdict1)
+    savemat(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}/matlab_scripts/p{participant}_multi_conds_fmri_spec_run_concat_1.97_durns.mat", mdict1)
     # savemat(f"E:\Shared drives\Varshini_Brea\CoMLaM\Preprocessed\SPM\P{participant}\matlab_scripts\\p{participant}_multi_conds_fmri_spec_run_2.mat", mdict2)
