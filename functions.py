@@ -535,7 +535,7 @@ def map_stimuli_w2v(participant):
 
 
 def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False, nifti_type='rf',
-                       beta=True, beta_mask_type='gm'):
+                       beta=True, beta_mask_type='gm', embedding_type='w2v'):
     """
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
     :return: the nifti file for the participant and the corresponding condition.
@@ -554,10 +554,14 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
                 path = "/data/spm\sentiment\\avg_trs\\"
             else:
                 path = "/data/spm\sentiment\\"
-        if avg_w2v == False:
-            w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
-        else:
-            w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_avg_dict.npz"
+        if embedding_type == 'w2v':
+            if avg_w2v == False:
+                w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz"
+            else:
+                w2v_path = "G:\comlam\embeds\\two_words_stim_w2v_avg_dict.npz"
+        elif embedding_type == 'roberta':
+            w2v_path = "G:\comlam\embeds\\roberta_two_word_pooler_output_vectors.npz"
+
     elif system == 'Linux':
         # For Compute Canada development.
         if masked:
@@ -573,12 +577,14 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
                 path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/avg_trs/"
             else:
                 path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/"
-
-        if avg_w2v == False:
-            w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
-        else:
-            w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
-
+        if embedding_type == 'w2v':
+            if avg_w2v == False:
+                w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
+            else:
+                w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
+        elif embedding_type == 'roberta':
+            # Load roberta sentiment embeddings (pooler_output).
+            w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
 
     if beta:
         nifti_path = beta_path + f"beta_{beta_mask_type}Mask/P{participant}.npz"
