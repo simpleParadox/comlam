@@ -61,7 +61,7 @@ def create_w2v_mappings():
 
 
 def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False ,store_cosine_diff=False, nifti_type='rf',
-                            beta=True, beta_mask_type='gm'):
+                            beta=True, beta_mask_type='gm', embedding_type='w2v'):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]. List of integers.
     :avg_w2v: To predict avg w2v vectors or concat w2v vectors. Boolean.
@@ -85,7 +85,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
     for participant in participants:
         print(participant)
         x, y, stims = load_nifti_and_w2v(participant, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=load_avg_trs, masked=masked, permuted=permuted,
-                                         beta=beta, beta_mask_type=beta_mask_type)
+                                         beta=beta, beta_mask_type=beta_mask_type, embedding_type=embedding_type)
         print('loaded data')
 
 
@@ -150,7 +150,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
 
 
 cross_validation_nested(avg_w2v=True, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
-                        beta=True, beta_mask_type='roi')
+                        beta=True, beta_mask_type='roi', embedding_type='roberta')
 
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
 # parts = [1003, 1006, 1008, 1010]

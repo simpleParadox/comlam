@@ -585,9 +585,32 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
         elif embedding_type == 'roberta':
             # Load roberta sentiment embeddings (pooler_output).
             w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
+    elif system == 'Darwin':
+        # For MacOS local development.
+        if masked:
+            if beta:
+                # Load beta weights.
+                beta_path = "/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/masked/beta_weights/"
+            if load_avg_trs:
+                path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/{nifti_type}/avg_trs/"
+            else:
+                path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/masked/{nifti_type}/concat_trs/"
+        else:
+            if load_avg_trs:
+                path = "/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/avg_trs/"
+            else:
+                path = "/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/"
+        if embedding_type == 'w2v':
+            if avg_w2v == False:
+                w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
+            else:
+                w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
+        elif embedding_type == 'roberta':
+            # Load roberta sentiment embeddings (pooler_output).
+            w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
 
     if beta:
-        nifti_path = beta_path + f"beta_{beta_mask_type}Mask/P{participant}.npz"
+        nifti_path = beta_path + f"beta_{beta_mask_type}Mask/P{participant}_{beta_mask_type}_beta_dict.npz"
     else:
         if mean_removed == True:
             if load_avg_trs:
