@@ -6,6 +6,40 @@ from nilearn import image as img
 from scipy.spatial.distance import cosine
 import platform
 import glob
+import scipy.stats as stats
+
+from sklearn.model_selection import LeaveOneOut
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+
+def store_stim_sentiment():
+    stim_ratings_sheet = pd.read_csv('data/SM_s_SCL-OPP___Our_Stim_List.xlsx - Master.csv')
+
+    # Get stimuli phrases.
+    stim_array = np.load('embeds/two_words_stim_w2v_avg_dict.npz', allow_pickle=True)['arr_0'].tolist()
+    stims = [key for key in stim_array.keys()]
+
+    sentiment_scores = []
+
+    # temp = stim_ratings_sheet[stim_ratings_sheet['Term'].isin(stims)]
+    df_stims = []
+    for stim in stims:
+        try:
+            df_stims.append(stim_ratings_sheet[stim_ratings_sheet['Term']==stim].Term.values.tolist()[0])
+            sentiment_scores.append(stim_ratings_sheet[stim_ratings_sheet['Term']==stim].iloc[:,1].values.tolist()[0])
+        except Exception as e:
+            print(f"Problem with stimulus: {stim}", e)
+
+    # Adding 'a nose job' instead of 'nose job' because I think they are the same.
+    df_stims.append('nose job')
+    sentiment_scores.append(stim_ratings_sheet[stim_ratings_sheet['Term']=='a nose job'].iloc[:,1].values.tolist()[0])
+
+    # Make a dictionary from two lists using 'zip'.
+    stim_ratings_dict = dict(zip(df_stims, sentiment_scores))
+
+    np.savez_compressed('embeds/sentiment_ratings.npz', stim_ratings_dict)
 
 def store_betas_spm(participant, task='sentiment', mask_type='gm'):
     """
@@ -611,6 +645,7 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
 
     if beta:
         nifti_path = beta_path + f"beta_{beta_mask_type}Mask/P{participant}_{beta_mask_type}_beta_dict.npz"
+        print(nifti_path)
     else:
         if mean_removed == True:
             if load_avg_trs:
@@ -690,15 +725,14 @@ def two_vs_two(preds, ytest, store_cos_diff=False):
 
     return points * 1.0 / total_points, cosine_diffs  # Multiplying by 1.0 for floating point conversion.
 
-def extended_2v2(y_test, preds):
+def extended_2v2(y_test, preds, store_cos_diff=False):
     """
-    There are two additions to this function over the previous two_vs_two test.
-    1. The grid figures will be symmetric now.
-    2. Each pair of words is compared only once.
+    Calculate accuracy for each possible pair.
     """
     points = 0
     total_points = 0
     n_words = 12
+    cosine_diffs = []
 
     for i in range(preds.shape[0] - 1):
         s_i = y_test[i]
@@ -715,8 +749,11 @@ def extended_2v2(y_test, preds):
 
             if dsii + dsjj <= dsij + dsji:
                 points += 1
-                temp_score = 1  # If the 2v2 test does not pass then temp_score = 0
+                if store_cos_diff:
+                    cosine_diffs.append(dsii + dsjj - dsij - dsji)
             total_points += 1
+
+    return points * 1.0 / total_points, cosine_diffs
 
 
 def leave_two_out(stims):
@@ -727,8 +764,9 @@ def leave_two_out(stims):
     """
 
     # Find out all the pairs.
-    all_test_pairs = []
     all_train_pairs = []
+    all_test_pairs = []
+
     for i in range(len(stims) - 1):
         for j in range(i + 1, len(stims)):
             test_pair = [i, j]
@@ -739,8 +777,35 @@ def leave_two_out(stims):
 
     return all_train_pairs, all_test_pairs
 
+def leave_one_out(stims):
+    loo = LeaveOneOut()
+    all_test_pairs = []
+    all_train_pairs = []
+    for train_index, test_index in loo.split(stims):
+        all_train_pairs.append(train_index.tolist())
+        all_test_pairs.append(test_index.tolist())
+
+    return all_train_pairs, all_test_pairs
+
 def list_diff(li1, li2):
     return list(set(li1) - set(li2)) + list(set(li2) - set(li1))
 
-def load_stim_vectors(participant):
-    pass
+def get_dim_corr(ypred, ytest):
+    """
+    Calculate dimension wise correlation for the word vectors.
+    :return: Correlation
+
+    NOTE: ypred and ytest should have equal number of dimensions for dimension 1.
+    """
+    # assert ypred.shape[1] == ytest.shape[1]
+
+    # np.corrcoef(ypred, ytest)
+    ypred = np.array(ypred)
+    ypred = ypred.reshape(ypred.shape[0], ypred.shape[2])
+    ytest = np.array(ytest)
+    ytest = ytest.reshape(ytest.shape[0], ytest.shape[2])
+    dim_corrs = []
+    for i in range(ypred.shape[1]):
+        r, p_value = stats.pearsonr(ypred[:, i], ytest[:, i])
+        dim_corrs.append(r)
+    return dim_corrs

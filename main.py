@@ -10,7 +10,7 @@ from sklearn.linear_model import Ridge, RidgeCV
 import time
 
 from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, \
-    two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out, store_masked_trs_spm, store_betas_spm
+    two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out, store_masked_trs_spm, store_betas_spm, get_dim_corr, leave_one_out, extended_2v2
 # from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
@@ -61,13 +61,14 @@ def create_w2v_mappings():
 
 
 def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False ,store_cosine_diff=False, nifti_type='rf',
-                            beta=True, beta_mask_type='gm', embedding_type='w2v'):
+                            beta=True, beta_mask_type='gm', embedding_type='w2v', metric='2v2', leave_one_out_cv=False):
     """
     :param part: Accepts a list of participants. Example: [1003, 1006]. List of integers.
     :avg_w2v: To predict avg w2v vectors or concat w2v vectors. Boolean.
     :mean_removed: Whether to use mean removed data or not. Boolean.
     :load_avg_trs: Whether to load avg_trs or concat_trs. Boolean.
     :masked: Whether to use masked data or not. Boolean.
+    :metric: '2v2' or 'corr'.
     :return: None but prints 2v2 accuracy for the participant.
     """
     # Do ridge regression with GridSearchCV here.
@@ -76,6 +77,8 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
 
     participant_accuracies = {}
     cosine_diff_dict = {}
+    participant_correlations = {}
+    avg_r2 = []
 
     if type(part) == list:
         participants = part
@@ -89,15 +92,14 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
         print('loaded data')
 
 
-        scaler = StandardScaler()
-        x_scaled = scaler.fit_transform(x)
-        print('Scaled Data')
-
         # Load the data and the stims to do a leave two out cv.
         # Load the nifti, the word vectors, and the stim and then leave out two samples on which you'll do 2v2.
 
         # Write a function to do the leave-two-out cv. This returns the train and test indices.
-        train_indices, test_indices = leave_two_out(stims)
+        if leave_one_out_cv:
+            train_indices, test_indices = leave_one_out(stims)
+        else:
+            train_indices, test_indices = leave_two_out(stims)
 
         ## [[[1,2,4,5], [6,7] ], [[2,4,5,6], [1, 7]], ....   ]
         print('Decided indices')
@@ -106,9 +108,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
         i = 0
         start = time.time()
         for train_index, test_index in zip(train_indices, test_indices):
-
-            if i % 100 == 0:
-                print('Iteration: ', i)
+            print('Iteration: ', i)
             i += 1
 
             # model = Ridge(solver='cholesky')
@@ -118,25 +118,47 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
             # preds = clf.predict(x[test_index])
 
 
+            scaler = StandardScaler()
+            X_train = scaler.fit_transform(x[train_index])
+            X_test = scaler.transform(x[test_index])
+            y_train = y[train_index]
+            y_test = y[test_index]
+
+
             alphas = [0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1, 5, 10]
             # Uses LOOCV by default to tune hyperparameter tuning.
             cv_model = RidgeCV(alphas=alphas, gcv_mode='svd', scoring='neg_mean_squared_error', alpha_per_target=True)
 
-            cv_model.fit(x_scaled[train_index], y[train_index])
-            preds = cv_model.predict(x_scaled[test_index])
+            cv_model.fit(X_train, y_train)
+            preds = cv_model.predict(X_test)
 
             # Store the preds in an array and all the ytest with the indices.
 
             preds_list.append(preds)
-            y_test_list.append(y[test_index])
+            y_test_list.append(y_test)
+            if leave_one_out_cv == False:
+                avg_r2.append(cv_model.score(X_test, y_test))
+            else:
+                print("Cannot calculate R-squared for less than two-samples.")
 
-        accuracy, cosine_diff = two_vs_two(preds_list, y_test_list, store_cos_diff=store_cosine_diff)
-        cosine_diff_dict[participant] = cosine_diff
 
+        if metric == '2v2':
+            # accuracy, cosine_diff = two_vs_two(preds_list, y_test_list, store_cos_diff=store_cosine_diff)
+            accuracy, cosine_diff = extended_2v2(np.array(preds_list), np.array(y_test_list), store_cos_diff=store_cosine_diff)
+            cosine_diff_dict[participant] = cosine_diff
+            participant_accuracies[participant] = accuracy
+        elif metric == 'corr':
+            dim_corrs = get_dim_corr(preds_list, y_test_list)
+            participant_correlations[participant] = dim_corrs
 
-
-        participant_accuracies[participant] = accuracy
+        # cosine_diff_dict[participant] = cosine_diff
+        #
+        # participant_accuracies[participant] = accuracy
+    if metric == '2v2':
         print(participant_accuracies)
+    else:
+        print(participant_correlations)
+    print("Averaged r2: ", np.mean(avg_r2))
 
     if store_cosine_diff:
         np.savez_compressed("/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/debug_logs_files/cosine_diffs_2v2.npz", cosine_diff_dict)
@@ -150,7 +172,7 @@ def cross_validation_nested(part=None, avg_w2v=False, mean_removed=False, load_a
 
 
 cross_validation_nested(avg_w2v=True, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
-                        beta=True, beta_mask_type='roi', embedding_type='roberta')
+                        beta=True, beta_mask_type='roi', embedding_type='roberta', metric='corr', leave_one_out_cv=True)
 
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]
 # parts = [1003, 1006, 1008, 1010]
