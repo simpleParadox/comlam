@@ -4,6 +4,7 @@ import os
 import matplotlib.pyplot as plt
 from nilearn import image as img
 from scipy.spatial.distance import cosine
+from scipy.spatial.distance import euclidean
 import platform
 import glob
 import scipy.stats as stats
@@ -569,7 +570,7 @@ def map_stimuli_w2v(participant):
 
 
 def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False, nifti_type='rf',
-                       beta=True, beta_mask_type='gm', embedding_type='w2v'):
+                       beta=True, beta_mask_type='gm', embedding_type='w2v', predict_sentiment=False):
     """
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
     :return: the nifti file for the participant and the corresponding condition.
@@ -621,6 +622,7 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
             w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
     elif system == 'Darwin':
         # For MacOS local development.
+        # First set of conditions for retrieving the fMRIi data.
         if masked:
             if beta:
                 # Load beta weights.
@@ -634,14 +636,19 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
                 path = "/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/avg_trs/"
             else:
                 path = "/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/"
-        if embedding_type == 'w2v':
-            if avg_w2v == False:
-                w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
-            else:
-                w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
-        elif embedding_type == 'roberta':
-            # Load roberta sentiment embeddings (pooler_output).
-            w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
+        # Second set of conditions for retrieving the embeddings/ratings.
+        if predict_sentiment:
+            w2v_path = "embeds/sentiment_ratings.npz"
+        else:
+            if embedding_type == 'w2v':
+                if avg_w2v == False:
+                    w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
+                else:
+                    w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
+            elif embedding_type == 'roberta':
+                # Load roberta sentiment embeddings (pooler_output).
+                w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
+
 
     if beta:
         nifti_path = beta_path + f"beta_{beta_mask_type}Mask/P{participant}_{beta_mask_type}_beta_dict.npz"
@@ -675,6 +682,8 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
 
     x_temp = np.array(x_data)
     y_temp = np.array(y_data)
+    if predict_sentiment:
+        y_temp = np.reshape(y_temp, (y_temp.shape[0],-1))
 
 
     # The following line was for the unmasked data I think.
@@ -689,6 +698,32 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
         stims.append(stim)
 
     return x_temp, y_temp, stims
+
+
+def extended_euclidean_2v2(preds, y_test):
+    total_points = 0
+    points = 0
+
+    for i in range(preds.shape[0] - 1):
+        s_i = y_test[i]
+        s_i_pred = preds[i]
+        for j in range(i + 1, preds.shape[0]):
+            temp_score = 0
+            s_j = y_test[j]
+            s_j_pred = preds[j]
+
+            dsii = euclidean(s_i, s_i_pred)
+            dsjj = euclidean(s_j, s_j_pred)
+            dsij = euclidean(s_i, s_j_pred)
+            dsji = euclidean(s_j, s_i_pred)
+
+            if dsii + dsjj <= dsij + dsji:
+                points += 1
+            total_points += 1
+
+    return points * 1.0 / total_points
+
+
 
 def two_vs_two(preds, ytest, store_cos_diff=False):
     total_points = 0
@@ -809,3 +844,14 @@ def get_dim_corr(ypred, ytest):
         r, p_value = stats.pearsonr(ypred[:, i], ytest[:, i])
         dim_corrs.append(r)
     return dim_corrs
+
+def get_violin_plot(participant, corr_values):
+    """
+    :param participant: the participant for which the violin plot is being generated.
+    :param corr_values: corr_values for which
+    :return:
+    """
+    fig = plt.figure()
+    sns.violinplot(x=corr_values)
+    fig.suptitle(f"{participant} corr_values")
+    return fig
