@@ -13,7 +13,7 @@ import time
 from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, \
     two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out, store_masked_trs_spm, store_betas_spm, get_dim_corr, leave_one_out, extended_2v2, \
     get_violin_plot, extended_euclidean_2v2
-# from gensim.models import KeyedVectors
+from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
 from sklearn.preprocessing import StandardScaler
@@ -31,36 +31,50 @@ def avg_trs():
         store_avg_tr(participant, file_name_a, file_name_b)
 
 
-def create_w2v_mappings():
+def create_w2v_mappings(mean=False):
     """
     Retrieve word2vec vectors from Word2Vec for two-word stimuli only for now.
     :return: Nothing; stores the concatenated vectors to disk.
     """
-    participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
+    # participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
+    participants = [1030]
     all_stims = []
     for participant in participants:
         stims = map_stimuli_w2v(participant)
         all_stims.extend(stims)
 
     all_stims_set = list(set(all_stims))
+    spaced_words = []
+    for word in all_stims_set:
+        words = word.split('_')
+        temp = ' '.join(words)
+        spaced_words.append(temp)
+
 
     # Now load the Word2Vec model.
-    model = KeyedVectors.load_word2vec_format("G:\\jw_lab\\jwlab_eeg\\regression\\GoogleNews-vectors-negative300.bin.gz", binary=True)
+    model = KeyedVectors.load_word2vec_format("GoogleNews-vectors-negative300.bin.gz", binary=True)
 
     stim_vector_dict = {}
     for stim in all_stims_set:
-        words = stim.split()
+        # words = stim.split()
+        words = stim.split('_')
         vector = []
 
         # Each word vector should be of size 600.
         for word in words:
             word_vector = model[word]
-            vector.extend(word_vector.tolist())
+            if mean:
+                vector.append(word_vector.tolist())
+            else:
+                vector.extend(word_vector.tolist())
+        if mean:
+            vector = np.mean(vector, axis=0)
         stim_vector_dict[stim] = vector
 
-    np.savez_compressed('G:\comlam\embeds\\two_words_stim_w2v_concat_dict.npz', stim_vector_dict)
 
+    np.savez_compressed('embeds/sixty_two_word_stims_avg.npz', stim_vector_dict)
 
+# create_w2v_mappings(mean=True)
 
 def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False ,store_cosine_diff=False, nifti_type='rf',
                             beta=True, beta_mask_type='gm', embedding_type='w2v', metric='2v2', leave_one_out_cv=False, predict_sentiment=True):
@@ -95,7 +109,7 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
         participants = part
     else:
         # participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
-        participants = [1004]#, 1006, 1007, 1008, 1010, 1012, 1016, 1017, 1019, 1024]
+        participants = [1014]#, 1006, 1007, 1008, 1010, 1012, 1016, 1017, 1019, 1024]
     for participant in participants:
         print(participant)
         x, y, stims = load_nifti_and_w2v(participant, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=load_avg_trs, masked=masked, permuted=permuted,
@@ -121,8 +135,8 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
         r2_values = []
         for train_index, test_index in zip(train_indices, test_indices):
             print('Iteration: ', i)
-            if i == 10:
-                break
+            # if i == 4:
+            #     break
             i += 1
 
             # model = Ridge(solver='cholesky')
@@ -133,22 +147,28 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
 
 
             scaler = StandardScaler()
-            X_train = scaler.fit_transform(x[train_index])
-            X_test = scaler.transform(x[test_index])
-            y_train = y[train_index]
-            y_test = y[test_index]
+            if decoding:
+                X_train = scaler.fit_transform(x[train_index])
+                X_test = scaler.transform(x[test_index])
+                y_train = y[train_index]
+                y_test = y[test_index]
+            else:
+                X_train = scaler.fit_transform(y[train_index])
+                X_test = scaler.transform(y[test_index])
+                y_train = x[train_index]
+                y_test = x[test_index]
 
 
             alphas = [0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1, 5, 10]
             # Uses LOOCV by default to tune hyperparameter tuning.
             cv_model = RidgeCV(alphas=alphas, gcv_mode='svd', scoring='neg_mean_squared_error', alpha_per_target=True)
 
-            if decoding:
-                cv_model.fit(X_train, y_train)  # Decoding
-                preds = cv_model.predict(X_test)
-            else:
-                cv_model.fit(y_train, X_train)  # Encoding
-                preds = cv_model.predict(y_test)
+            # if decoding:
+            cv_model.fit(X_train, y_train)  # Decoding
+            preds = cv_model.predict(X_test)
+            # else:
+            #     cv_model.fit(y_train, X_train)  # Encoding
+            #     preds = cv_model.predict(y_test)
 
 
             # Store the preds in an array and all the ytest with the indices.
@@ -176,7 +196,8 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
                 participant_correlations[participant] = dim_corrs
         else:
             # Encoding analysis, use the 2vs2 test but with euclidean distance.
-            accuracy, cosine_diff = extended_euclidean_2v2()
+            accuracy = extended_euclidean_2v2(np.array(preds_list), np.array(y_test_list))
+            participant_accuracies[participant] = accuracy
 
 
 
@@ -207,8 +228,8 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
     print('Total time: ', stop - start)
 
 
-cross_validation_nested(decoding=False, avg_w2v=True, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
-                        beta=True, beta_mask_type='roi', embedding_type='w2v', metric='2v2', leave_one_out_cv=True,
+cross_validation_nested(decoding=True, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
+                        beta=True, beta_mask_type='roi', embedding_type='sixty_w2v', metric='2v2', leave_one_out_cv=True,
                         predict_sentiment=False)
 
 # parts = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019, 1024]

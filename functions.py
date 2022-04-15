@@ -558,12 +558,13 @@ def store_avg_tr(participant, nifti_patha, nifti_pathb):
 
 
 def map_stimuli_w2v(participant):
-    tr_meta_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
-    metadata = pd.read_excel(tr_meta_path)  # Remove this in the final version.
+    # tr_meta_path = "E:\My Drive\CoMLaM_rohan\CoMLaM\\" + str(participant) + "_TRsToUse.xlsx"
+    metadata = pd.read_excel(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea/CoMLaM/Preprocessed/SPM/P{participant}_2k/multCondnsOnsetsJoinedP{participant}_2.xlsx")
+    # metadata = pd.read_excel(tr_meta_path)  # Remove this in the final version.
 
     stims = metadata.iloc[:, 0].values
     # Keep only stims with two words.
-    stims_two_words = [val for val in stims if val.count(' ')==1]
+    stims_two_words = [val for val in stims if val.count('_')==1]
     stims_two_words = list(set(stims_two_words))
 
     return stims_two_words
@@ -648,6 +649,11 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
             elif embedding_type == 'roberta':
                 # Load roberta sentiment embeddings (pooler_output).
                 w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
+            elif embedding_type == 'sixty_w2v':
+                if avg_w2v == False:
+                    w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/sixty_two_word_stims_concat.npz"
+                else:
+                    w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/sixty_two_word_stims_avg.npz"
 
 
     if beta:
