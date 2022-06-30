@@ -42,6 +42,11 @@ def store_stim_sentiment():
 
     np.savez_compressed('embeds/sentiment_ratings.npz', stim_ratings_dict)
 
+
+
+def store_stim_sentiment(congruent=False):
+    pass
+
 def store_betas_spm(participant, task='sentiment', mask_type='gm'):
     """
 
@@ -571,7 +576,7 @@ def map_stimuli_w2v(participant):
 
 
 def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False, nifti_type='rf',
-                       beta=True, beta_mask_type='gm', embedding_type='w2v', predict_sentiment=False):
+                       beta=True, beta_mask_type='gm', embedding_type='w2v', predict_sentiment=False, run=10, whole_brain=False, priceNine=True):
     """
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
     :return: the nifti file for the participant and the corresponding condition.
@@ -623,7 +628,7 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
             w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
     elif system == 'Darwin':
         # For MacOS local development.
-        # First set of conditions for retrieving the fMRIi data.
+        # First set of conditions for retrieving the fMRI data.
         if masked:
             if beta:
                 # Load beta weights.
@@ -654,11 +659,18 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
                     w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/sixty_two_word_stims_concat.npz"
                 else:
                     w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/sixty_two_word_stims_avg.npz"
+            elif embedding_type == 'sixty_roberta':
+                w2v_path = '/Users/simpleparadox/Desktop/Projects/comlam/embeds/roberta_sixty_two_word_pooler_output_vectors.npz'
 
-
-    if beta:
+    if beta and not whole_brain:
         nifti_path = beta_path + f"beta_{beta_mask_type}Mask/P{participant}_{beta_mask_type}_beta_dict.npz"
         print(nifti_path)
+    elif whole_brain:
+        run_suffix = str(run).zfill(2)
+        nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/wholeBrain/P{participant}_wholeBrain_beta_dict_{run_suffix}runs.npz"
+    elif priceNine:
+        run_suffix = str(run).zfill(2)
+        nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/priceNine/P{participant}_priceNine_beta_dict_{run_suffix}runs.npz"
     else:
         if mean_removed == True:
             if load_avg_trs:
@@ -682,7 +694,15 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
     x_data = []
     y_data = []
 
+    stim_keys = [k for k in w2v_data.keys()]
+
     for stim, fmri in nifti_data.items():
+        if "_" in stim and 'w2v' not in embedding_type:
+            # For stims if they have an underscore.
+            stim = ' '.join(stim.split('_'))
+
+        if '_' in stim_keys[0]:
+            stim = '_'.join(stim.split(' '))
         x_data.append(fmri.tolist())
         y_data.append(w2v_data[stim])
 
@@ -775,10 +795,14 @@ def extended_2v2(y_test, preds, store_cos_diff=False):
     n_words = 12
     cosine_diffs = []
 
-    for i in range(preds.shape[0] - 1):
+    # if type(y_test) == list:
+    #     y_test = np.array(y_test)
+    #     preds = np.array(preds)
+
+    for i in range(len(preds) - 1):
         s_i = y_test[i]
         s_i_pred = preds[i]
-        for j in range(i + 1, preds.shape[0]):
+        for j in range(i + 1, len(preds)):
             temp_score = 0
             s_j = y_test[j]
             s_j_pred = preds[j]
@@ -861,3 +885,104 @@ def get_violin_plot(participant, corr_values):
     sns.violinplot(x=corr_values)
     fig.suptitle(f"{participant} corr_values")
     return fig
+
+
+def load_nifti(participant, load_avg_trs=False, beta=False, beta_mask_type='roi', masked=False):
+    system = platform.system()
+    if system == 'Linux':
+        #NOTE: This 'if' block maybe be broken and may not cover all the use cases.
+        # For Compute Canada development.
+        if masked:
+            if beta:
+                # Load beta weights.
+                beta_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/beta_weights/"
+            if load_avg_trs:
+                path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/{nifti_type}/avg_trs/"
+            else:
+                path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/masked/{nifti_type}/concat_trs/"
+        else:
+            if load_avg_trs:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/avg_trs/"
+            else:
+                path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/concat_trs/"
+
+    elif system == 'Darwin':
+        # For MacOS local development.
+        # First set of conditions for retrieving the fMRIi data.
+
+        if beta:
+            # Load beta weights.
+            if masked:
+                beta_path = "/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/masked/beta_weights/"
+                nifti_path = beta_path + f"beta_{beta_mask_type}Mask/P{participant}_{beta_mask_type}_beta_dict.npz"
+        else:
+            # Raw data.
+            if load_avg_trs:
+                path = "/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/raw/unmasked/"
+                nifti_path = path + f"P{participant}_avg.npz"
+            else:
+                path = "/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/raw/unmasked"
+                nifti_path = path + f"P{participant}.npz"
+        # Second set of conditions for retrieving the embeddings/ratings.
+
+    nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
+    return nifti_data
+
+
+
+
+def load_y(participant='', embedding_type='w2v', avg_w2v=False, sentiment=False, congruent=False):
+    """
+    :param participant: May be redundant but tells you to load the 'y' for the participant.
+    :param embedding_type: 'w2v', 'sixty_w2v', or 'roberta'
+    :param avg_w2v: Whether to use average w2v or concat w2v. Boolean, default: False.
+    :param sentiment: Whether to predict the sentiment of the two-word stimuli.
+    :param congruent: Whether to predict the congruency of the stimuli.
+    :return:
+    """
+    system = platform.system()
+    if system == 'Darwin':
+        if sentiment:
+            w2v_path = "embeds/binary_sentiment.npz"
+        elif congruent:
+            w2v_path = f"embeds/congruency.npz"
+        else:
+            if embedding_type == 'w2v':
+                if avg_w2v == False:
+                    w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
+                else:
+                    w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
+            elif embedding_type == 'roberta':
+                # Load roberta sentiment embeddings (pooler_output).
+                w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
+            elif embedding_type == 'sixty_w2v':
+                if avg_w2v == False:
+                    w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/sixty_two_word_stims_concat.npz"
+                else:
+                    w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/sixty_two_word_stims_avg.npz"
+            elif embedding_type == 'sixty_roberta':
+                w2v_path = '/Users/simpleparadox/Desktop/Projects/comlam/embeds/roberta_sixty_two_word_pooler_output_vectors.npz'
+
+
+    w2v_data = np.load(w2v_path, allow_pickle=True)['arr_0'].tolist()
+
+    return w2v_data
+
+
+
+def get_train_and_test_samples(participant, load_avg_trs, beta, beta_mask_type,
+                               avg_w2v, roberta, sentiment, congruent,
+                               train_size=6, total_samples=10, permuted=False):
+    """
+    :train_size: The number of samples in the train set. Default=6
+    :total_samples: The number of samples in the dataset. Default=10
+    Implement a resampling procedure so that the test set has all the samples averaged to get one sample and the remaining are in the training set.
+    :return: Training and test sets.
+    """
+
+    # First we need to group the samples according to the stimuli.
+    x = load_nifti(participant, load_avg_trs, beta=beta, beta_mask_type=beta_mask_type)
+    y = load_y(avg_w2v=avg_w2v, roberta=roberta, sentiment=sentiment, congruent=congruent)
+
+
+
