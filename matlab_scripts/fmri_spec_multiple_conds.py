@@ -6,17 +6,17 @@ import ast
 import glob
 
 # participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
-participants = [1005, 1014, 1030, 1033]
-participants = [1014]
+# participants = [1005, 1014, 1030, 1033]
+participants = [1032]
 
 for participant in participants:
     # Windows path.
     # trs_to_use = pd.read_excel(f"E:\Shared drives\Varshini_Brea\CoMLaM\\Preprocessed\\SPM\\P{participant}\\sentiment\\multCondnsP{participant}.xlsx")
-    # participant = 1033
+    # participant = 1032
     # Mac path
     t = '2k'
     save_path = glob.glob(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_*/")
-    f = glob.glob(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_*/multCondnsOnsetsJoinedP{participant}_2.xlsx")
+    f = glob.glob(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_*/multCondnsOnsetsJoinedP{participant}_2k.xlsx")
     # trs_to_use = pd.read_excel(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_*/multCondnsOnsetsJoinedP{participant}_2.xlsx")
 
     trs_to_use = pd.read_excel(f[0])
