@@ -21,11 +21,11 @@ def beta_to_npz(participant, runs=10, type='2k', brain_type='wholeBrain'):
     local_participant_study_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/{brain_type}/"
 
     run_suffix = str(runs).zfill(2)
-
-    remote_participant_path = f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_{type}/sentiment/Titration/{brain_type[0].upper() + brain_type[1:]}/1stLevel_concat{brain_type[0].upper() + brain_type[1:]}_{run_suffix}Runs/"
+    remote_participant_path = f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_{type}/sentiment/Titration/{brain_type[0].upper() + brain_type[1:]}/Betas_concat{brain_type[0].upper() + brain_type[1:]}_{run_suffix}runs/"
+    # remote_participant_path = f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_{type}/sentiment/Titration/{brain_type[0].upper() + brain_type[1:]}/1stLevel_concat{brain_type[0].upper() + brain_type[1:]}_{run_suffix}Runs/"
     # remote_participant_study_path = f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_{type}/sentiment/"
     s = 'mb'
-    if type == '2k': s = ''
+    if type == '2k': s = 'k'
     multCondnsFile = pd.read_excel(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_{type}/multCondnsOnsetsJoinedP{participant}_2{s}.xlsx")
 
     # Windows path
@@ -90,7 +90,7 @@ def raw_to_npz(participant, type='2k', avg_tr=False):
 
     # Mapping the files and the modified run numbers.
     mod_runs = runs_from_fnames
-    runs = [i for i in range(1,len(mod_runs))]
+    runs = [i for i in range(1, len(mod_runs)+1)]
     run_mapping = dict(zip(mod_runs, runs))
 
     files_runs_dict = {}
@@ -114,8 +114,10 @@ def raw_to_npz(participant, type='2k', avg_tr=False):
         print(run)
 
         for stim, tr_nums in zip(data['combinedStim'], data['TRsToUse']):
+            print(stim)
             tr_stims.append(stim)
             all_stim_trs = []
+            tr_nums = eval(tr_nums)
             for tr_num in tr_nums:
                 file_number = str(tr_num).zfill(6)
                 dict_files = files_runs_dict[run]
@@ -131,7 +133,7 @@ def raw_to_npz(participant, type='2k', avg_tr=False):
 
     stim_and_trs = dict(zip(tr_stims, tr_files))
 
-    np.savez_compressed(f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/raw/unmasked/{participant}_raw.npz", stim_and_trs)
+    np.savez_compressed(f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/raw/unmasked/{participant}_raw_concat.npz", stim_and_trs)
 
 
 def store_sentiment(participant, runs=10, type='2k', congruent=False):
@@ -157,8 +159,9 @@ def store_sentiment(participant, runs=10, type='2k', congruent=False):
 
     # Now store the beta numbers.
 
-# runs = [4, 5, 6, 7, 8, 9, 10]
-runs = [4,5,6,7,8]
+runs = [4, 5, 6, 7, 8, 9, 10]
+# runs = [4,5,6,7,8]
 # runs = [6]
 for run in runs:
-    beta_to_npz(1030, runs=run, type='2k', brain_type='priceNine')
+    # beta_to_npz(1038, runs=run, type='2k', brain_type='wholeBrain')
+    raw_to_npz(1014)

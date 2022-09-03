@@ -687,6 +687,8 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
                 print("Load concat TRs and non mean removed")
                 nifti_path = path + f"P{participant}.npz"
 
+    print("Nifti Path:", nifti_path)
+
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
     w2v_data = np.load(w2v_path, allow_pickle=True)['arr_0'].tolist()
 

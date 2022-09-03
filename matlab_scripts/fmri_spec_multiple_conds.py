@@ -7,7 +7,8 @@ import glob
 
 # participants = [1003, 1004, 1006, 1007, 1008, 1010, 1012, 1013, 1016, 1017, 1019]
 # participants = [1005, 1014, 1030, 1033]
-participants = [1032]
+participants = [1014]
+beta_run_wise = True
 
 for participant in participants:
     # Windows path.
@@ -15,8 +16,8 @@ for participant in participants:
     # participant = 1032
     # Mac path
     t = '2k'
-    save_path = glob.glob(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_*/")
-    f = glob.glob(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_*/multCondnsOnsetsJoinedP{participant}_2k.xlsx")
+    save_path = glob.glob(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_*/single_trial_multiConds_mats/")
+    f = glob.glob(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_*/multCondnsOnsetsJoinedP{participant}_2.xlsx")
     # trs_to_use = pd.read_excel(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_*/multCondnsOnsetsJoinedP{participant}_2.xlsx")
 
     trs_to_use = pd.read_excel(f[0])
@@ -29,31 +30,47 @@ for participant in participants:
 
     case_onsets = {}
 
+    if beta_run_wise:
+        stim_onsets = []
+        for run in range(10):
+            for row in trs_to_use.iterrows():
+                onset_list = ast.literal_eval(row[1]['ConcatOnset'])
+                if t == '2k':
+                    names.append(row[1]['combinedStim'])
+                else:
+                    names.append(row[1]['stimulus'])
+                stim_onsets.append(onset_list[run] * 1.0)
+                durations.append(0)
+            # for j in range(4, len(onset_list) + 1):
+            mdict['names'] = names
+            mdict['onsets'] = stim_onsets
+            mdict['durations'] = durations
+            savemat(save_path[0] + f"p{participant}_multiCondns_ConcatOnset_{run}_runs_single_trial.mat", mdict)
 
 
-    for row in trs_to_use.iterrows():
-        if t=='2k':
-            names.append(row[1]['combinedStim'])
-        else:
-            names.append(row[1]['stimulus'])
-        # onsets.append(ast.literal_eval(row[1]['ConcatOnset']))
 
-        onset_list = ast.literal_eval(row[1]['ConcatOnset'])
+    else:
+        for row in trs_to_use.iterrows():
+            if t=='2k':
+                names.append(row[1]['combinedStim'])
+            else:
+                names.append(row[1]['stimulus'])
+            # onsets.append(ast.literal_eval(row[1]['ConcatOnset']))
+
+            onset_list = ast.literal_eval(row[1]['ConcatOnset'])
+
+            for j in range(4, len(onset_list)+1):
+                if j not in case_onsets.keys():
+                    case_onsets[j] = [np.array(onset_list[:j], dtype=float).tolist()]
+                else:
+                    case_onsets[j].append(np.array(onset_list[:j], dtype=float).tolist())
+
 
         for j in range(4, len(onset_list)+1):
-            if j not in case_onsets.keys():
-                case_onsets[j] = [np.array(onset_list[:j], dtype=float).tolist()]
-            else:
-                case_onsets[j].append(np.array(onset_list[:j], dtype=float).tolist())
-
-        durations.append(0.0)
-
-    #
-    for j in range(4, len(onset_list)+1):
-        mdict['names'] = names
-        mdict['onsets'] = case_onsets[j]
-        mdict['durations'] = durations
-        savemat(save_path[0] + f"p{participant}_multiCondns_ConcatOnset_{j}_runs.mat", mdict)
+            mdict['names'] = names
+            mdict['onsets'] = case_onsets[j]
+            mdict['durations'] = durations
+            savemat(save_path[0] + f"p{participant}_multiCondns_ConcatOnset_{j}_runs.mat", mdict)
 
 
     # names = sorted(set(trs_to_use["words"].values.tolist()))

@@ -93,6 +93,80 @@ def cross_validation_sanity():
     # First let's write code to classify the fMRI data between having positive and negative sentiment.
 
     # First load the stimuli and get the positive and negative sentiment.
+    pass
+
+
+def across_congruent_cv(participant=None, run=4, train_type='con',
+                        test_type='inc', metric='2v2',
+                        permutation=False, iterations=1,
+                        observed_acc=1.0):
+    # Load train data.
+    # if train_type == 'con':
+    #     test_type = 'inc'
+    # else:
+    #     test_type = 'con'
+
+
+    x, y, stims = load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False,
+                                     masked=True, permuted=False,
+                                     beta=False, beta_mask_type='wholeBrain', embedding_type='sixty_w2v',
+                                     predict_sentiment=False, run=run,
+                                     whole_brain=True, priceNine=False)
+
+
+    # First get the training data for one congruency type.
+    train_idx = []
+    test_idx = []
+    trs_to_use = pd.read_excel(
+        f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{1014}_2k/sentiment/TRsToUse_AlphaOrder_P{1014}_2.xlsx")
+    trs_groups = trs_to_use.groupby(by=['combinedStim'])
+    for idx, row in enumerate(trs_groups):
+        stim = row[0]
+        sent = row[1].iloc[0]['Polarity'][-3:]
+        if sent == train_type.title():
+            train_idx.append(idx)
+        if sent == test_type.title():
+            test_idx.append(idx)
+    X_train = x[train_idx]
+    y_train = y[train_idx]
+
+    X_test = x[test_idx]
+    y_test = y[test_idx]
+
+    if permutation:
+        np.random.shuffle(y_train)
+
+
+    # Now let's do a simple classification.
+    alphas = [0.0000001, 0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1, 5, 10]
+    if permutation:
+        perm_accs = []
+    for iters in range(iterations):
+        print("Iteration: ", iters)
+        cv_model = RidgeCV(alphas=alphas, scoring='neg_mean_squared_error', alpha_per_target=True)
+
+        cv_model.fit(X_train, y_train)  # Decoding
+        preds = cv_model.predict(X_test)
+
+
+
+        if metric == '2v2':
+            accuracy, cosine_diff = extended_2v2(preds, y_test)
+            if permutation:
+                perm_accs.append(accuracy)
+    if permutation:
+        print("Number of times above obs_acc: ", np.sum(np.array(perm_accs) > observed_acc))
+        p_val = np.sum(np.array(perm_accs) > observed_acc) / len(perm_accs)
+        print("Average permutation accuracy: ", np.mean(perm_accs))
+
+        # print(f" 2 vs 2 Accuracy: {accuracy}")
+
+
+    if permutation:
+        return p_val
+    return np.round(accuracy,2)
+
+
 
 
 
@@ -128,6 +202,7 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
     participant_accuracies = {}
     cosine_diff_dict = {}
     participant_correlations = {}
+    participant_corrs_means = []
     participant_pvals = {}
     avg_r2 = []
 
@@ -142,8 +217,9 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
         print(participant)
         observed_acc = observed_acc
         iter_acc = []
+        participant_corrs_means = []
         for iter in range(iterations):
-            print("Iteration: ", iter)
+            # print("Iteration: ", iter)
 
 
 
@@ -196,7 +272,7 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
 
 
 
-                print("Brain shape: ", x.shape)
+                # print("Brain shape: ", x.shape)
 
 
 
@@ -221,7 +297,7 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
             y_explained_variance_ratio = []
 
             for train_index, test_index in zip(train_indices, test_indices):
-                print('Index iteration: ', i)
+                # print('Index iteration: ', i)
                 # if i == 4:
                 #     break
                 i += 1
@@ -350,7 +426,10 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
                     print("Iter acc:", iter_acc)
                 elif metric == 'corr':
                     dim_corrs = get_dim_corr(preds_list, y_test_list)
-                    participant_correlations[participant] = dim_corrs
+                    participant_correlations[participant] = np.mean(dim_corrs)
+                    if permuted:
+                        participant_corrs_means.append(np.mean(dim_corrs))
+
             else:
                 # Encoding analysis, use the 2 vs 2 test but with euclidean distance.
                 accuracy = extended_euclidean_2v2(np.array(preds_list), np.array(y_test_list))
@@ -359,16 +438,21 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
             # Setting the mean participant accuracy across all the iterations.
 
 
+
+
+
         participant_accuracies[participant] = np.mean(iter_acc)
 
             # print(f"Iteration {iter} r2 score: ", r2_score(preds_list, y_test_list))
 
 
-            # Do the p-value calculation here. Count how many permuted accuracies are greater than the observed accuracies.
-        print("np.sum iter_acc > observed_acc", np.sum(np.array(iter_acc) > observed_acc))
-        participant_pvals[participant] = np.sum(np.array(iter_acc) > observed_acc) / len(iter_acc)
-
-        print(f"Participant {participant} p-values over {iterations} permutation iterations: ", participant_pvals)
+        # Do the p-value calculation here. Count how many permuted accuracies are greater than the observed accuracies.
+        # print("np.sum iter_acc > observed_acc", np.sum(np.array(iter_acc) > observed_acc))
+        if metric == '2v2':
+            participant_pvals[participant] = np.sum(np.array(iter_acc) > observed_acc) / len(iter_acc)
+        # participant_pvals[participant] = (np.sum(np.array(participant_corrs_means)  > observed_acc)) / len(participant_corrs_means)
+        #
+        # print(f"Participant {participant} p-values over {iterations} permutation iterations: ", participant_pvals)
 
 
 
@@ -386,6 +470,7 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
             print(f"Participant p-values over {iterations} permutation iterations: ", participant_pvals)
     else:
         print("Participant Correlations: ", participant_correlations)
+        print("Participant Correlations: ", participant_pvals)
     if leave_one_out_cv == False:
         print("Averaged r2: ", np.mean(avg_r2))
 
@@ -398,29 +483,38 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
 
 
     # Code for storing the violin plots.
-    if metric == 'corr':
-        for p, corrs in participant_correlations.items():
-            fig = get_violin_plot(p, corrs)
-            fig.savefig(f"graphs/violin plots/{p}_beta_dict_{embedding_type}.png")
+    # if metric == 'corr':
+    #     for p, corrs in participant_correlations.items():
+    #         fig = get_violin_plot(p, corrs)
+    #         fig.savefig(f"graphs/violin plots/{p}_beta_dict_{embedding_type}.png")
     stop = time.time()
     print('Total time: ', stop - start)
-    return participant_accuracies[participant]
 
+    if metric == 'corr':
+        return participant_correlations[participant]
+    return participant_accuracies[participant]
 runs = [4, 5, 6, 7, 8, 9, 10]
 # runs = [4,5,6,7,8]
+runs = [6]
 variances_explained = []
-part = 1030
-p_accs = {part : {}}
-for run in runs:
-    print("CV betas made with runs: ", run)
-    score = cross_validation_nested(decoding=True, part=[part], avg_w2v=True, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
-                            beta=False, beta_mask_type='wholeBrain', embedding_type='sixty_roberta', metric='2v2', leave_one_out_cv=True,
-                            sentiment=False, congruent=False, pca=True, pca_brain=False, pca_vectors=True, pca_threshold=0.95, show_variance_explained=False,
-                            iterations=1, scale_target=False, run=run, whole_brain=True, priceNine=False, divide_by_congruency=False, congruency_type='inc', observed_acc=0.5621)
-    p_accs[part][run] = score
-print("All accuracies:", p_accs)
-#     print(var_ex_brain)
-#     variances_explained.append(var_ex_brain)
+parts = [1014]#, 1030, 1032, 1038]
+p_accs = {}
+for p in parts:
+    p_accs[p] = {}
+
+# print(p_accs)
+for p in parts:
+    for run in runs:
+        print("CV betas made with runs: ", run)
+        # score = cross_validation_nested(decoding=True, part=[p], avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
+        #                         beta=False, beta_mask_type='wholeBrain', embedding_type='sixty_w2v', metric='2v2', leave_one_out_cv=True,
+        #                         sentiment=False, congruent=False, pca=True, pca_brain=False, pca_vectors=True, pca_threshold=0.95, show_variance_explained=False,
+        #                         iterations=1, scale_target=True, run=run, whole_brain=True, priceNine=False, divide_by_congruency=False, congruency_type='inc', observed_acc=0.061)
+        score = across_congruent_cv(participant=p, run=run, train_type='inc', test_type='con',metric='2v2', permutation=True, iterations=50, observed_acc=0.66)
+        p_accs[p][run] = score
+    print("All accuracies:", p_accs)
+    # print(var_ex_brain)
+    # variances_explained.append(var_ex_brain)
 
 #
 # for varx, run in zip(variances_explained, runs):
