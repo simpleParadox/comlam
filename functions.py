@@ -888,6 +888,17 @@ def get_violin_plot(participant, corr_values):
     fig.suptitle(f"{participant} corr_values")
     return fig
 
+def load_nifti_by_run(participant, type='wholeBrain', run=4):
+
+    system = platform.system()
+    if system == 'Darwin':
+        run_suffix = str(run).zfill(2)
+        nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+        nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
+        return nifti_data
+
+
+
 
 def load_nifti(participant, load_avg_trs=False, beta=False, beta_mask_type='roi', masked=False):
     system = platform.system()
@@ -910,7 +921,7 @@ def load_nifti(participant, load_avg_trs=False, beta=False, beta_mask_type='roi'
 
     elif system == 'Darwin':
         # For MacOS local development.
-        # First set of conditions for retrieving the fMRIi data.
+        # First set of conditions for retrieving the fMRI data.
 
         if beta:
             # Load beta weights.

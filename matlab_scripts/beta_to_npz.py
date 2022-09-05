@@ -136,7 +136,7 @@ def raw_to_npz(participant, type='2k', avg_tr=False):
     np.savez_compressed(f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/raw/unmasked/{participant}_raw_concat.npz", stim_and_trs)
 
 
-def store_sentiment(participant, runs=10, type='2k', congruent=False):
+def store_sentiment(participant, runs=10, type='2k', label_type='congruency'):
     participant = 1014
     type='2k'
     trs_to_use = pd.read_excel(f"/Volumes/GoogleDrive/Shared drives/Varshini_Brea_Rohan/CoMLaM/Preprocessed/SPM/P{participant}_{type}/sentiment/TRsToUse_AlphaOrder_P{participant}_2.xlsx")
@@ -146,16 +146,21 @@ def store_sentiment(participant, runs=10, type='2k', congruent=False):
     trs_groups = trs_to_use.groupby(by=['combinedStim'])
     for idx, row in enumerate(trs_groups):
         stim = row[0]
-        sent = row[1].iloc[0]['Polarity'][-3:]
+        sent = row[1].iloc[0]['Polarity']#[-3:]
 
-        if congruent:
-            if sent != 'eut':
+        if label_type == 'sentiment':
+            if ['Pos', 'Neg', 'Neut'] in sent:
+                sentiment_dict[stim] = sent
+                sentiment_dict['stims'][idx] = stim
+        elif label_type == 'sentiment':
+            if ['Con', 'Inc'] in sent:
                 sentiment_dict[stim] = sent
                 sentiment_dict['stims'][idx] = stim
 
-
-
-    np.savez_compressed(f"embeds/congruency.npz", sentiment_dict)
+    if label_type == 'congruency':
+        np.savez_compressed(f"embeds/all_congruency.npz", sentiment_dict)
+    elif label_type == 'sentiment':
+        np.savez_compressed(f"embeds/all_sentiment.npz", sentiment_dict)
 
     # Now store the beta numbers.
 
@@ -164,4 +169,5 @@ runs = [4, 5, 6, 7, 8, 9, 10]
 # runs = [6]
 for run in runs:
     # beta_to_npz(1038, runs=run, type='2k', brain_type='wholeBrain')
-    raw_to_npz(1014)
+    # raw_to_npz(1014)
+    store_sentiment(1014, congruent=T)

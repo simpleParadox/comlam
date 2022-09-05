@@ -17,11 +17,12 @@ from sklearn.preprocessing import StandardScaler
 
 from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, \
     two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out, store_masked_trs_spm, store_betas_spm, get_dim_corr, leave_one_out, extended_2v2, \
-    get_violin_plot, extended_euclidean_2v2, load_nifti, load_y
+    get_violin_plot, extended_euclidean_2v2, load_nifti, load_y, load_nifti_by_run
 from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
-
+# Load custom scripts.
+from exp_funcs import congruency_classification, sentiment_classification
 
 def avg_trs():
     # Function to store Averaged concatenated TRs on GDrive.
@@ -81,19 +82,75 @@ def create_w2v_mappings(mean=False):
 # create_w2v_mappings(mean=True)
 
 
-
-
-
-def cross_validation_sanity():
-    """
-    The function does some sanity checks just to make sure that nothing's wrong with the fMRI data.
-    :return: None but prints something to the console.
+def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
+                                     iters=50, loocv=False, permuted=False):
     """
 
-    # First let's write code to classify the fMRI data between having positive and negative sentiment.
+    :param participant: participant number.
+    :param run: beta run value
+    :param type: 'sentiment' or 'congruency'
+    :param iters: CV iterations.
+    :param loocv: Default=False. Whether to use loocv. Ignored for type='congruency'.
+    :param permuted: Whether to permute the labels for permutation test.
+    :return: Accuracy score for the experiment.
+    """
 
-    # First load the stimuli and get the positive and negative sentiment.
-    pass
+    # Load data for the given participant and the corresponding run.
+
+    # Based on the experiment type, call the appropriate function from the exp_funcs.py file.
+    if type == 'sentiment':
+        # Do sentiment classification.
+        # Load the data.
+        x_data = load_nifti_by_run(participant, type='wholeBrain', run=run)
+        y_data = load_y(participant=participant, sentiment=True,
+                        congruent=False)
+        x = []
+        y = []
+
+        for stim in y_data['stims'].values():
+            x.append(x_data[stim])
+            y.append(y_data[stim])
+
+        X = np.array(x)
+        y = np.array(y)
+
+        if permuted:
+            np.random.shuffle(y)
+        # Now keep only those stims which have positive or negative sentiment.
+
+        stims = [s for s in y_data['stims'].values()]
+
+        encoder = LabelEncoder()
+        y = encoder.fit_transform(y)
+
+        return sentiment_classification(X=X, y=y, loocv=loocv, iters=iters)
+
+    elif type == 'congruency':
+        x_data = load_nifti_by_run(participant, type='wholeBrain', run=run)
+        y_data = load_y(participant=participant, sentiment=False,
+                        congruent=True)
+
+        x = []
+        y = []
+
+        for stim in y_data['stims'].values():
+            x.append(x_data[stim])
+            y.append(y_data[stim])
+
+        X = np.array(x)
+        y = np.array(y)
+
+        if permuted:
+            np.random.shuffle(y)
+        # Now keep only those stims which have positive or negative sentiment.
+
+        stims = [s for s in y_data['stims'].values()]
+
+        encoder = LabelEncoder()
+        y = encoder.fit_transform(y)
+
+        return congruency_classification(X=X, y=y, iters=iters)
+
 
 
 def across_congruent_cv(participant=None, run=4, train_type='con',
@@ -245,7 +302,6 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
 
                 encoder = LabelEncoder()
                 y = encoder.fit_transform(y)
-
 
 
 
