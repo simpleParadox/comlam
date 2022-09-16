@@ -891,11 +891,16 @@ def get_violin_plot(participant, corr_values):
 def load_nifti_by_run(participant, type='wholeBrain', run=4):
 
     system = platform.system()
+    run_suffix = str(run).zfill(2)
     if system == 'Darwin':
-        run_suffix = str(run).zfill(2)
-        nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
-        nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
-        return nifti_data
+            nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+    elif system == 'Linux':
+        nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+    
+    nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
+    return nifti_data
+    
+
 
 
 
@@ -975,6 +980,28 @@ def load_y(participant='', embedding_type='w2v', avg_w2v=False, sentiment=False,
                     w2v_path = "/Users/simpleparadox/Desktop/Projects/comlam/embeds/sixty_two_word_stims_avg.npz"
             elif embedding_type == 'sixty_roberta':
                 w2v_path = '/Users/simpleparadox/Desktop/Projects/comlam/embeds/roberta_sixty_two_word_pooler_output_vectors.npz'
+    elif system == 'Linux':
+        if sentiment:
+            w2v_path = "embeds/all_sentiment.npz"
+        elif congruent:
+            w2v_path = f"embeds/all_congruency.npz"
+        else:
+            if embedding_type == 'w2v':
+                if avg_w2v == False:
+                    w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
+                else:
+                    w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
+            elif embedding_type == 'roberta':
+                # Load roberta sentiment embeddings (pooler_output).
+                w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
+            elif embedding_type == 'sixty_w2v':
+                if avg_w2v == False:
+                    w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/sixty_two_word_stims_concat.npz"
+                else:
+                    w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/sixty_two_word_stims_avg.npz"
+            elif embedding_type == 'sixty_roberta':
+                w2v_path = '/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/roberta_sixty_two_word_pooler_output_vectors.npz'
+
 
 
     w2v_data = np.load(w2v_path, allow_pickle=True)['arr_0'].tolist()
