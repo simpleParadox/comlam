@@ -107,9 +107,9 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
         x = []
         y = []
 
-        for stim in y_data['stims'].values():
+        for stim in x_data.keys():
             x.append(x_data[stim])
-            y.append(y_data[stim])
+            y.append(y_data['labels'][stim])
 
         X = np.array(x)
         y = np.array(y)
@@ -118,12 +118,11 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
             np.random.shuffle(y)
         # Now keep only those stims which have positive or negative sentiment.
 
-        stims = [s for s in y_data['stims'].values()]
 
         encoder = LabelEncoder()
-        y = encoder.fit_transform(y)
+        y_transformed = encoder.fit_transform(y)
 
-        return sentiment_classification(X=X, y=y, loocv=loocv, iters=iters)
+        return sentiment_classification(X=X, y=y_transformed, loocv=loocv, iters=iters)
 
     elif type == 'congruency':
         x_data = load_nifti_by_run(participant, type='wholeBrain', run=run)
@@ -133,9 +132,9 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
         x = []
         y = []
 
-        for stim in y_data['stims'].values():
+        for stim in y_data['labels'].keys():
             x.append(x_data[stim])
-            y.append(y_data[stim])
+            y.append(y_data['labels'][stim])
 
         X = np.array(x)
         y = np.array(y)
@@ -144,11 +143,11 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
             np.random.shuffle(y)
         # Now keep only those stims which have positive or negative sentiment.
 
-        stims = [s for s in y_data['stims'].values()]
 
         encoder = LabelEncoder()
         y = encoder.fit_transform(y)
 
+        # The following does stratified shuffle split with iters splits.
         return congruency_classification(X=X, y=y, iters=iters)
 
 
@@ -549,26 +548,27 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
     if metric == 'corr':
         return participant_correlations[participant]
     return participant_accuracies[participant]
-runs = [4, 5, 6, 7, 8, 9, 10]
-# runs = [4,5,6,7,8]
-runs = [6]
-variances_explained = []
-parts = [1014]#, 1030, 1032, 1038]
-p_accs = {}
-for p in parts:
-    p_accs[p] = {}
 
-# print(p_accs)
-for p in parts:
-    for run in runs:
-        print("CV betas made with runs: ", run)
-        # score = cross_validation_nested(decoding=True, part=[p], avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
-        #                         beta=False, beta_mask_type='wholeBrain', embedding_type='sixty_w2v', metric='2v2', leave_one_out_cv=True,
-        #                         sentiment=False, congruent=False, pca=True, pca_brain=False, pca_vectors=True, pca_threshold=0.95, show_variance_explained=False,
-        #                         iterations=1, scale_target=True, run=run, whole_brain=True, priceNine=False, divide_by_congruency=False, congruency_type='inc', observed_acc=0.061)
-        score = across_congruent_cv(participant=p, run=run, train_type='inc', test_type='con',metric='2v2', permutation=True, iterations=50, observed_acc=0.66)
-        p_accs[p][run] = score
-    print("All accuracies:", p_accs)
+# runs = [4, 5, 6, 7, 8, 9, 10]
+# # runs = [4,5,6,7,8]
+# runs = [6]
+# variances_explained = []
+# parts = [1014]#, 1030, 1032, 1038]
+# p_accs = {}
+# for p in parts:
+#     p_accs[p] = {}
+#
+# # print(p_accs)
+# for p in parts:
+#     for run in runs:
+#         print("CV betas made with runs: ", run)
+#         # score = cross_validation_nested(decoding=True, part=[p], avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
+#         #                         beta=False, beta_mask_type='wholeBrain', embedding_type='sixty_w2v', metric='2v2', leave_one_out_cv=True,
+#         #                         sentiment=False, congruent=False, pca=True, pca_brain=False, pca_vectors=True, pca_threshold=0.95, show_variance_explained=False,
+#         #                         iterations=1, scale_target=True, run=run, whole_brain=True, priceNine=False, divide_by_congruency=False, congruency_type='inc', observed_acc=0.061)
+#         score = across_congruent_cv(participant=p, run=run, train_type='inc', test_type='con',metric='2v2', permutation=True, iterations=50, observed_acc=0.66)
+#         p_accs[p][run] = score
+#     print("All accuracies:", p_accs)
     # print(var_ex_brain)
     # variances_explained.append(var_ex_brain)
 
@@ -592,3 +592,26 @@ for p in parts:
     #     print("Participant not found or something: ", e)
     #     pass
 # store_trs_fsl(1012, 'sentiment', remove_mean=False)
+
+
+runs = [4, 5, 6, 7, 8, 9, 10]
+variances_explained = []
+# parts = [1014, 1030, 1032, 1038]
+parts = [1014]
+p_accs = {}
+for p in parts:
+    p_accs[p] = {}
+
+# print(p_accs)
+for p in parts:
+    print("Participant: ", p)
+    for run in runs:
+        print("CV betas made with runs: ", run)
+        print("Calling classify sentiment or congruency function")
+        score = classify_sentiment_or_congruency(participant=p, run=run, type='congruency',
+                                         iters=50, loocv=False, permuted=False)
+        print(score)
+        p_accs[p][run] = score
+        print("Run accuracy:", p_accs)
+    print("All accuracies:", p_accs)
+print("All accuracies:", p_accs)

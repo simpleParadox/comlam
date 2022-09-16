@@ -143,31 +143,38 @@ def store_sentiment(participant, runs=10, type='2k', label_type='congruency'):
 
     sentiment_dict = {}
     sentiment_dict['stims'] = {}
+    sentiment_dict['labels'] = {}
     trs_groups = trs_to_use.groupby(by=['combinedStim'])
     for idx, row in enumerate(trs_groups):
         stim = row[0]
-        sent = row[1].iloc[0]['Polarity']#[-3:]
+        sent = row[1].iloc[0]['Polarity']
 
         if label_type == 'sentiment':
-            if ['Pos', 'Neg', 'Neut'] in sent:
-                sentiment_dict[stim] = sent
+            if 'Pos' in sent or 'Neg' in sent:
+                sentiment_dict['labels'][stim] = sent[:3]
                 sentiment_dict['stims'][idx] = stim
-        elif label_type == 'sentiment':
-            if ['Con', 'Inc'] in sent:
-                sentiment_dict[stim] = sent
+            elif 'eut' in sent:
+                sentiment_dict['labels'][stim] = 'Neut'
+                sentiment_dict['stims'][idx] = stim
+        elif label_type == 'congruency':
+            if 'Con' in sent or 'Inc' in sent:
+                sentiment_dict['labels'][stim] = sent[-3:]
+                sentiment_dict['stims'][idx] = stim
+            if 'eut' in sent:
+                sentiment_dict['labels'][stim] = 'Neut'
                 sentiment_dict['stims'][idx] = stim
 
     if label_type == 'congruency':
-        np.savez_compressed(f"embeds/all_congruency.npz", sentiment_dict)
+        np.savez_compressed(f"../embeds/all_congruency.npz", sentiment_dict)
     elif label_type == 'sentiment':
-        np.savez_compressed(f"embeds/all_sentiment.npz", sentiment_dict)
+        np.savez_compressed(f"../embeds/all_sentiment.npz", sentiment_dict)
 
     # Now store the beta numbers.
 
-runs = [4, 5, 6, 7, 8, 9, 10]
-# runs = [4,5,6,7,8]
-# runs = [6]
-for run in runs:
+# runs = [4, 5, 6, 7, 8, 9, 10]
+# # runs = [4,5,6,7,8]
+# # runs = [6]
+# for run in runs:
     # beta_to_npz(1038, runs=run, type='2k', brain_type='wholeBrain')
     # raw_to_npz(1014)
-    store_sentiment(1014, congruent=T)
+store_sentiment(1014, label_type='congruency')

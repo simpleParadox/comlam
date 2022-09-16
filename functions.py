@@ -893,7 +893,7 @@ def load_nifti_by_run(participant, type='wholeBrain', run=4):
     system = platform.system()
     if system == 'Darwin':
         run_suffix = str(run).zfill(2)
-        nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+        nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
         nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
         return nifti_data
 
@@ -956,9 +956,9 @@ def load_y(participant='', embedding_type='w2v', avg_w2v=False, sentiment=False,
     system = platform.system()
     if system == 'Darwin':
         if sentiment:
-            w2v_path = "embeds/binary_sentiment.npz"
+            w2v_path = "embeds/all_sentiment.npz"
         elif congruent:
-            w2v_path = f"embeds/congruency.npz"
+            w2v_path = f"embeds/all_congruency.npz"
         else:
             if embedding_type == 'w2v':
                 if avg_w2v == False:
