@@ -122,7 +122,7 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
         encoder = LabelEncoder()
         y_transformed = encoder.fit_transform(y)
 
-        return sentiment_classification(X=X, y=y_transformed, loocv=loocv, iters=iters)
+        return sentiment_classification(X=X, y=y_transformed, loocv=loocv, iters=iters, permuted=permuted)
 
     elif type == 'congruency':
         x_data = load_nifti_by_run(participant, type='wholeBrain', run=run)
@@ -148,7 +148,7 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
         y = encoder.fit_transform(y)
 
         # The following does stratified shuffle split with iters splits.
-        return congruency_classification(X=X, y=y, iters=iters)
+        return congruency_classification(X=X, y=y, iters=iters, permuted=permuted)
 
 
 
@@ -595,23 +595,33 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
 
 
 runs = [4, 5, 6, 7, 8, 9, 10]
+# runs = [4, 5, 6, 7, 8]
 variances_explained = []
 # parts = [1014, 1030, 1032, 1038]
-parts = [1014]
+parts = [1030]
 p_accs = {}
 for p in parts:
     p_accs[p] = {}
 
-# print(p_accs)
+permutation = True
+print("Permuted: ", permutation)
+iters = 50
+exp_type = 'congruency'
+loocv = False
 for p in parts:
     print("Participant: ", p)
     for run in runs:
         print("CV betas made with runs: ", run)
         print("Calling classify sentiment or congruency function")
-        score = classify_sentiment_or_congruency(participant=p, run=run, type='congruency',
-                                         iters=50, loocv=False, permuted=False)
-        print(score)
-        p_accs[p][run] = score
-        print("Run accuracy:", p_accs)
-    print("All accuracies:", p_accs)
-print("All accuracies:", p_accs)
+        if permutation:
+            iter_scores = classify_sentiment_or_congruency(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation)
+            p_accs[p][run] = iter_scores
+        else:
+            score = classify_sentiment_or_congruency(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation)
+            p_accs[p][run] = score
+    if permutation:
+        # Save the permutation test scores as an npz file.
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{p}/{timestr}_iter_scores.npz", p_accs)
+    else:
+        print("All accuracies:", p_accs)

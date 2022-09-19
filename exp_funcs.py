@@ -10,7 +10,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import StandardScaler
 
-def sentiment_classification(X, y, loocv=False, iters=50):
+def sentiment_classification(X, y, loocv=False, iters=50, permuted=False):
 
     """
     Do a 3-way sentiment classification to classify positive, negative, and neutral sentiment from the fMRI data.
@@ -55,11 +55,12 @@ def sentiment_classification(X, y, loocv=False, iters=50):
             print("Actual: ", y_test)
             print("Accuracy: ", accuracy)
             fold_accuracies.append(accuracy)
-
+        if permuted:
+            return fold_accuracies
         return np.mean(fold_accuracies)
 
 
-def congruency_classification(X, y, iters):
+def congruency_classification(X, y, iters, permuted=False):
     """
     Train a classification model on fMRI data for congruent and incongruent
     stimuli and do a prediction on the same. Using staraified shuffle split.
@@ -89,5 +90,6 @@ def congruency_classification(X, y, iters):
         clf.fit(X_train, y_train)
         accuracy = clf.score(X_test, y_test)
         fold_accuracies.append(accuracy)
-
+    if permuted:
+        return fold_accuracies
     return np.mean(fold_accuracies)
