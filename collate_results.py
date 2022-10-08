@@ -33,6 +33,9 @@ def permutation_test_titration(participant, runs, obs_acc, exp_type):
         # Now estimate a null distribution using kde.
         non_perm_acc = obs_acc[idx]
         kde = stats.gaussian_kde(run_perm_values)
+        print("Run: ", run)
+        print("avg values: ", np.mean(run_perm_values))
+        print("std values: ", np.std(run_perm_values))
         # Now integrate from the obs_acc to 1.
         p_value = kde.integrate_box_1d(non_perm_acc, 1.0)
         non_corrected_p_values.append(p_value)
@@ -51,13 +54,14 @@ def permutation_test_titration(participant, runs, obs_acc, exp_type):
 
 participant = 1014
 runs = [4, 5, 6, 7, 8, 9, 10]
-obs_acc = [ 0.3616,
+obs_acc = [  0.3616,
 0.465,
 0.5016,
 0.45,
 0.385,
 0.412,
 0.47
+
 ]
 run_p_values, pvalues_fdr = permutation_test_titration(participant, runs, obs_acc,'congruency')
 print("P-values are: ", run_p_values)

@@ -83,7 +83,8 @@ def create_w2v_mappings(mean=False):
 
 
 def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
-                                     iters=50, loocv=False, permuted=False):
+                                     iters=50, loocv=False, permuted=False, brain_type='wholeBrain', way='3', 
+                                     use_nc=False):
     """
 
     :param participant: participant number.
@@ -101,9 +102,13 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
     if type == 'sentiment':
         # Do sentiment classification.
         # Load the data.
-        x_data = load_nifti_by_run(participant, type='wholeBrain', run=run)
-        y_data = load_y(participant=participant, sentiment=True,
-                        congruent=False)
+
+        if not use_nc:
+            x_data = load_nifti_by_run(participant, type=brain_type, run=run)
+            y_data = load_y(participant=participant, sentiment=True, congruent=False) 
+        else:
+            X = y = None
+            return sentiment_classification(X=X, y=y_transformed, participant=participant, loocv=loocv, iters=iters, permuted=permuted)
         x = []
         y = []
 
@@ -118,16 +123,28 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
             np.random.shuffle(y)
         # Now keep only those stims which have positive or negative sentiment.
 
+        if remove_neutral:
+            removed_idxs = []
+            for idx, sent in enumerate(y):
+                if sent == 'Neut':
+                    removed_idxs.append(idx)
+            X = np.delete(X, removed_idxs, axis=0)
+            y = np.delete(y, removed_idxs, axis=0)
+
 
         encoder = LabelEncoder()
         y_transformed = encoder.fit_transform(y)
 
-        return sentiment_classification(X=X, y=y_transformed, loocv=loocv, iters=iters, permuted=permuted)
+        return sentiment_classification(X=X, y=y_transformed, participant=participant, loocv=loocv, iters=iters, permuted=permuted)
 
     elif type == 'congruency':
-        x_data = load_nifti_by_run(participant, type='wholeBrain', run=run)
-        y_data = load_y(participant=participant, sentiment=False,
-                        congruent=True)
+        if not use_nc:
+            x_data = load_nifti_by_run(participant, brain_type, run=run)
+            y_data = load_y(participant=participant, sentiment=False,
+                        congruent=True, way=way)
+        else:
+            X = y = None
+            return congruency_classification(X=X, y=y_transformed, loocv=loocv, iters=iters, permuted=permuted)
 
         x = []
         y = []
@@ -146,6 +163,8 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
 
         encoder = LabelEncoder()
         y = encoder.fit_transform(y)
+
+        
 
         # The following does stratified shuffle split with iters splits.
         return congruency_classification(X=X, y=y, iters=iters, permuted=permuted)
@@ -231,7 +250,7 @@ def across_congruent_cv(participant=None, run=4, train_type='con',
 def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False ,store_cosine_diff=False, nifti_type='rf',
                             beta=True, beta_mask_type='gm', embedding_type='w2v', metric='2v2', leave_one_out_cv=False, sentiment=False, congruent=False,
                             pca=False, pca_brain = False, pca_vectors = False, pca_threshold=0.95, show_variance_explained=True,
-                            iterations=1, scale_target=False, run=10, whole_brain=False, priceNine=True, divide_by_congruency=False, congruency_type='con',
+                            iterations=1, scale_target=False, run=10, whole_brain=False, priceNine=False, motor=False, divide_by_congruency=False, congruency_type='con',
                             observed_acc=1.0):
     """
 
@@ -307,7 +326,7 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
             else:
                 x, y, stims = load_nifti_and_w2v(participant, avg_w2v=avg_w2v, mean_removed=mean_removed, load_avg_trs=load_avg_trs, masked=masked, permuted=permuted,
                                                  beta=beta, beta_mask_type=beta_mask_type, embedding_type=embedding_type, predict_sentiment=False, run=run,
-                                                 whole_brain=whole_brain, priceNine=priceNine)
+                                                 whole_brain=whole_brain, priceNine=priceNine, motor=motor)
                 # 'stims' has the same order as that of the niftis.
 
                 if divide_by_congruency:
@@ -551,22 +570,22 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
 
 # runs = [4, 5, 6, 7, 8, 9, 10]
 # # runs = [4,5,6,7,8]
-# runs = [6]
+# # runs = [6]
 # variances_explained = []
-# parts = [1014]#, 1030, 1032, 1038]
+# parts = [1030, 1032]#, 1030, 1032, 1038]
 # p_accs = {}
 # for p in parts:
 #     p_accs[p] = {}
-#
+
 # # print(p_accs)
 # for p in parts:
 #     for run in runs:
 #         print("CV betas made with runs: ", run)
-#         # score = cross_validation_nested(decoding=True, part=[p], avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
-#         #                         beta=False, beta_mask_type='wholeBrain', embedding_type='sixty_w2v', metric='2v2', leave_one_out_cv=True,
-#         #                         sentiment=False, congruent=False, pca=True, pca_brain=False, pca_vectors=True, pca_threshold=0.95, show_variance_explained=False,
-#         #                         iterations=1, scale_target=True, run=run, whole_brain=True, priceNine=False, divide_by_congruency=False, congruency_type='inc', observed_acc=0.061)
-#         score = across_congruent_cv(participant=p, run=run, train_type='inc', test_type='con',metric='2v2', permutation=True, iterations=50, observed_acc=0.66)
+#         score = cross_validation_nested(decoding=True, part=[p], avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=True, permuted=False, store_cosine_diff=False, nifti_type='wrf',
+#                                 beta=False, beta_mask_type='wholeBrain', embedding_type='sixty_w2v', metric='2v2', leave_one_out_cv=True,
+#                                 sentiment=False, congruent=False, pca=True, pca_brain=False, pca_vectors=True, pca_threshold=0.95, show_variance_explained=False,
+#                                 iterations=50, scale_target=True, run=run, whole_brain=False, priceNine=False, motor=True, divide_by_congruency=False, congruency_type='inc', observed_acc=0.061)
+#         # score = across_congruent_cv(participant=p, run=run, train_type='inc', test_type='con',metric='2v2', permutation=True, iterations=50, observed_acc=0.66)
 #         p_accs[p][run] = score
 #     print("All accuracies:", p_accs)
     # print(var_ex_brain)
@@ -598,30 +617,53 @@ runs = [4, 5, 6, 7, 8, 9, 10]
 # runs = [4, 5, 6, 7, 8]
 variances_explained = []
 # parts = [1014, 1030, 1032, 1038]
-parts = [1030]
+parts = [1014]
 p_accs = {}
 for p in parts:
     p_accs[p] = {}
 
-permutation = True
+
+permutation = False
 print("Permuted: ", permutation)
 iters = 50
-exp_type = 'congruency'
+exp_type = 'sentiment'  # 'congruency' or 'sentiment'.
 loocv = False
-for p in parts:
-    print("Participant: ", p)
-    for run in runs:
-        print("CV betas made with runs: ", run)
-        print("Calling classify sentiment or congruency function")
-        if permutation:
-            iter_scores = classify_sentiment_or_congruency(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation)
-            p_accs[p][run] = iter_scores
-        else:
-            score = classify_sentiment_or_congruency(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation)
-            p_accs[p][run] = score
+brain_type = 'motor'  # 'wholeBrain', 'priceNine', or 'motor'
+way = '2'
+use_nc = False
+remove_neutral = True
+
+if use_nc:
     if permutation:
-        # Save the permutation test scores as an npz file.
-        timestr = time.strftime("%Y%m%d-%H%M%S")
-        np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{p}/{timestr}_iter_scores.npz", p_accs)
+        iter_scores = classify_sentiment_or_congruency(participant=p, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, use_nc=use_nc)
+        p_accs[p]= iter_scores
     else:
-        print("All accuracies:", p_accs)
+        score = classify_sentiment_or_congruency(participant=p, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, use_nc=use_nc)
+        p_accs[p] = score
+    print("All accuracies:", p_accs)
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{p}/{timestr}_iter_scores_{way}_way.npz", p_accs)
+    
+else:
+    for p in parts:
+        if p != 1037:
+            print("Participant: ", p)
+            runs = [4, 5, 6, 7, 8, 9, 10]
+        else:
+            runs = [4, 5, 6, 7, 8]
+        for run in runs:
+            
+            print("CV betas made with runs: ", run)
+            print("Calling classify sentiment or congruency function")
+            if permutation:
+                iter_scores = classify_sentiment_or_congruency(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way)
+                p_accs[p][run] = iter_scores
+            else:
+                score = classify_sentiment_or_congruency(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way)
+                p_accs[p][run] = score
+        if permutation:
+            # Save the permutation test scores as an npz file.
+            timestr = time.strftime("%Y%m%d-%H%M%S")
+            np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{p}/{timestr}_iter_scores_{way}_way.npz", p_accs)
+        else:
+            print("All accuracies:", p_accs)

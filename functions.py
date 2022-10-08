@@ -576,7 +576,7 @@ def map_stimuli_w2v(participant):
 
 
 def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_trs=False, masked=False, permuted=False, nifti_type='rf',
-                       beta=True, beta_mask_type='gm', embedding_type='w2v', predict_sentiment=False, run=10, whole_brain=False, priceNine=True):
+                       beta=True, beta_mask_type='gm', embedding_type='w2v', predict_sentiment=False, run=10, whole_brain=False, priceNine=False, motor=False):
     """
     :param participant: The particpant for which the fMRI data needs to be loaded. Takes an integer.
     :return: the nifti file for the participant and the corresponding condition.
@@ -623,6 +623,11 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
                 w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
             else:
                 w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_avg_dict.npz"
+        elif embedding_type == 'sixty_w2v':
+                if avg_w2v == False:
+                    w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/sixty_two_word_stims_concat.npz"
+                else:
+                    w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/sixty_two_word_stims_avg.npz"
         elif embedding_type == 'roberta':
             # Load roberta sentiment embeddings (pooler_output).
             w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/roberta_two_word_pooler_output_vectors.npz"
@@ -662,7 +667,7 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
             elif embedding_type == 'sixty_roberta':
                 w2v_path = '/Users/simpleparadox/Desktop/Projects/comlam/embeds/roberta_sixty_two_word_pooler_output_vectors.npz'
 
-    if beta and not whole_brain:
+    if beta and not whole_brain and not motor:
         nifti_path = beta_path + f"beta_{beta_mask_type}Mask/P{participant}_{beta_mask_type}_beta_dict.npz"
         print(nifti_path)
     elif whole_brain:
@@ -671,6 +676,9 @@ def load_nifti_and_w2v(participant, avg_w2v=False, mean_removed=False, load_avg_
     elif priceNine:
         run_suffix = str(run).zfill(2)
         nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/priceNine/P{participant}_priceNine_beta_dict_{run_suffix}runs.npz"
+    elif motor:
+        run_suffix = str(run).zfill(2)
+        nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/motor_ba12346/P{participant}_motor_beta_dict_{run_suffix}runs.npz"
     else:
         if mean_removed == True:
             if load_avg_trs:
@@ -895,7 +903,11 @@ def load_nifti_by_run(participant, type='wholeBrain', run=4):
     if system == 'Darwin':
             nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
     elif system == 'Linux':
-        nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+        if type != 'motor':
+            nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+        elif type == 'motor':
+            nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/motor_ba12346/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+
     
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
     return nifti_data
@@ -949,7 +961,7 @@ def load_nifti(participant, load_avg_trs=False, beta=False, beta_mask_type='roi'
 
 
 
-def load_y(participant='', embedding_type='w2v', avg_w2v=False, sentiment=False, congruent=False):
+def load_y(participant='', embedding_type='w2v', avg_w2v=False, sentiment=False, congruent=False, way='3'):
     """
     :param participant: May be redundant but tells you to load the 'y' for the participant.
     :param embedding_type: 'w2v', 'sixty_w2v', or 'roberta'
@@ -984,7 +996,10 @@ def load_y(participant='', embedding_type='w2v', avg_w2v=False, sentiment=False,
         if sentiment:
             w2v_path = "embeds/all_sentiment.npz"
         elif congruent:
-            w2v_path = f"embeds/all_congruency.npz"
+            if way == '3':
+                w2v_path = f"embeds/all_congruency.npz"
+            elif way == '2':
+                w2v_path = f"embeds/all_congruency_2_way.npz"
         else:
             if embedding_type == 'w2v':
                 if avg_w2v == False:

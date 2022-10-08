@@ -10,7 +10,14 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.preprocessing import StandardScaler
 
-def sentiment_classification(X, y, loocv=False, iters=50, permuted=False):
+
+from calculate_nc import load_betas_and_stims, get_train_and_test_from_nc
+
+
+
+
+def sentiment_classification(X=None, y=None, participant=None, iters=50, loocv=False, permuted=False, current_seed=-1, use_nc=False, brain_type='wholeBrain',
+                             remove_neutral=False):
 
     """
     Do a 3-way sentiment classification to classify positive, negative, and neutral sentiment from the fMRI data.
@@ -40,27 +47,58 @@ def sentiment_classification(X, y, loocv=False, iters=50, permuted=False):
 
     else:
         fold_accuracies = []
-        for iter in range(iters):
-            print("Iteration: ", iter)
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-            scaler = StandardScaler()
-            X_train = scaler.fit_transform(X_train)
-            X_test = scaler.transform(X_test)
-            param_grid = {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000]}
-            model = LogisticRegression()
-            clf = GridSearchCV(model, param_grid, n_jobs=-1, cv=None)  # Setting cv=None uses default 5 fold cross-validation.
-            clf.fit(X_train, y_train)
-            accuracy = clf.score(X_test, y_test)
-            print("Predictions: ", clf.predict(X_test))
-            print("Actual: ", y_test)
-            print("Accuracy: ", accuracy)
-            fold_accuracies.append(accuracy)
+        iter_count = 0
         if permuted:
-            return fold_accuracies
-        return np.mean(fold_accuracies)
+            sss = StratifiedShuffleSplit(n_splits=iters, test_size=0.2)
+        else:
+            sss = StratifiedShuffleSplit(n_splits=iters, test_size=0.2, random_state=42)
+        if use_nc:
+            X, y = load_betas_and_stims(participant, brain_type, exp_type='sentiment', remove_neutral=remove_neutral)
+            print("y: ", y)
+            print("len(y): ", len(y))
+            
+
+            for i in range(iters):
+                X_train, X_test, y_train, y_test = get_train_and_test_from_nc(X, y, seed=i)
+                print("Iter count: ", iter_count)
+                iter_count += 1
+                scaler = StandardScaler()
+                X_train = scaler.fit_transform(X_train)
+                X_test = scaler.transform(X_test)
+
+                param_grid = {'C':  [0.001, 0.01, 0.1, 1, 10, 100]}
+                model = LogisticRegression(max_iter=1000)
+                clf = GridSearchCV(model, param_grid, n_jobs=-1, cv=None)  # Setting cv=None uses default 5 fold cross-validation.
+                clf.fit(X_train, y_train)
+                accuracy = clf.score(X_test, y_test)
+                fold_accuracies.append(accuracy)
+            if permuted:
+                return fold_accuracies
+            return np.mean(fold_accuracies)
+        else:
+            for train_index, test_index in sss.split(X, y):
+                print("Iter count: ", iter_count)
+                iter_count += 1
+                X_train, X_test = X[train_index], X[test_index]
+                y_train, y_test = y[train_index], y[test_index]
+                scaler = StandardScaler()
+                X_train = scaler.fit_transform(X_train)
+                X_test = scaler.transform(X_test)
+                param_grid = {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000]}
+                model = LogisticRegression()
+                clf = GridSearchCV(model, param_grid, n_jobs=-1, cv=None)  # Setting cv=None uses default 5 fold cross-validation.
+                clf.fit(X_train, y_train)
+                accuracy = clf.score(X_test, y_test)
+                # print("Predictions: ", clf.predict(X_test))
+                # print("Actual: ", y_test)
+                # print("Accuracy: ", accuracy)
+                fold_accuracies.append(accuracy)
+            if permuted:
+                return fold_accuracies
+            return np.mean(fold_accuracies)
 
 
-def congruency_classification(X, y, iters, permuted=False):
+def congruency_classification(X=None, y=None, participant=None, iters=50, permuted=False, current_seed=-1, use_nc=False, brain_type='wholeBrain'):
     """
     Train a classification model on fMRI data for congruent and incongruent
     stimuli and do a prediction on the same. Using staraified shuffle split.
@@ -71,25 +109,50 @@ def congruency_classification(X, y, iters, permuted=False):
     """
     print("Doing congruency classification.")
     fold_accuracies = []
-    sss = StratifiedShuffleSplit(n_splits=iters, test_size=0.2, random_state=42)
-    iter_count = 0
-    for train_index , test_index in sss.split(X, y):
-        print("Iteration: ", iter_count)
-        iter_count += 1
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-
-        scaler = StandardScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_test = scaler.transform(X_test)
-
-
-        param_grid = {'C':  [0.001, 0.01, 0.1, 1, 10, 100]}
-        model = LogisticRegression()
-        clf = GridSearchCV(model, param_grid, n_jobs=-1, cv=None)  # Setting cv=None uses default 5 fold cross-validation.
-        clf.fit(X_train, y_train)
-        accuracy = clf.score(X_test, y_test)
-        fold_accuracies.append(accuracy)
     if permuted:
-        return fold_accuracies
-    return np.mean(fold_accuracies)
+        sss = StratifiedShuffleSplit(n_splits=iters, test_size=0.2)
+    else:
+        sss = StratifiedShuffleSplit(n_splits=iters, test_size=0.2, random_state=42)
+    iter_count = 0
+    if use_nc:
+        X, y = load_betas_and_stims(participant, brain_type, exp_type='congruency')
+        for i in range(iters):
+            print("iter: ", i)
+            X_train, X_test, y_train, y_test = get_train_and_test_from_nc(X, y, seed=i)
+
+            scaler = StandardScaler()
+            X_train = scaler.fit_transform(X_train)
+            X_test = scaler.transform(X_test)
+
+            param_grid = {'C':  [0.001, 0.01, 0.1, 1, 10, 100]}
+            model = LogisticRegression(max_iter=1000)
+            clf = GridSearchCV(model, param_grid, n_jobs=-1, cv=None)  # Setting cv=None uses default 5 fold cross-validation.
+            clf.fit(X_train, y_train)
+            accuracy = clf.score(X_test, y_test)
+            fold_accuracies.append(accuracy)
+        if permuted:
+            return fold_accuracies
+        return np.mean(fold_accuracies)            
+
+
+    else:
+        for train_index, test_index in sss.split(X, y):
+            print("Iteration: ", iter_count)
+            iter_count += 1
+            X_train, X_test = X[train_index], X[test_index]
+            y_train, y_test = y[train_index], y[test_index]
+
+            scaler = StandardScaler()
+            X_train = scaler.fit_transform(X_train)
+            X_test = scaler.transform(X_test)
+
+
+            param_grid = {'C':  [0.001, 0.01, 0.1, 1, 10, 100]}
+            model = LogisticRegression()
+            clf = GridSearchCV(model, param_grid, n_jobs=-1, cv=None)  # Setting cv=None uses default 5 fold cross-validation.
+            clf.fit(X_train, y_train)
+            accuracy = clf.score(X_test, y_test)
+            fold_accuracies.append(accuracy)
+        if permuted:
+            return fold_accuracies
+        return np.mean(fold_accuracies)
