@@ -7,17 +7,20 @@ import matplotlib.pyplot as plt
 from mne.stats import fdr_correction
 
 
-def permutation_test_titration(participant, runs, obs_acc, exp_type):
+def permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type, way, embedding_type):
     # First read the permutation accuracy files.
     permutation_results_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{participant}/"
     perm_results = []
     run_p_values = {}
     non_corrected_p_values = []
-    for f in glob.glob(permutation_results_path + "*.npz"):
+    for f in glob.glob(permutation_results_path + f"*{brain_type}*{exp_type}*{embedding_type}*way_{way}.npz"):
         # 'f' is the file name.
-        results = np.load(f, allow_pickle=True)['arr_0'].tolist()
-        # print(results)
-        perm_results.append(results)
+        try:
+            results = np.load(f, allow_pickle=True)['arr_0'].tolist()
+            # print(results)
+            perm_results.append(results)
+        except:
+            print("Cannot load file")
     print("Len perm_results: ", len(perm_results))
     
     
@@ -41,7 +44,7 @@ def permutation_test_titration(participant, runs, obs_acc, exp_type):
         non_corrected_p_values.append(p_value)
         run_p_values[run] = p_value
         sns.kdeplot(run_perm_values)
-        plt.savefig(f"{participant}_{exp_type}_{run}.png")
+        plt.savefig(f"{participant}_{exp_type}_{brain_type}_{run}_{embedding_type}_way_{way}.png")
 
     # Do p-value correction for multiple comparisons.
     alpha_level = 0.05
@@ -52,17 +55,17 @@ def permutation_test_titration(participant, runs, obs_acc, exp_type):
 
 
 
+brain_type = 'motor'
+embedding_type = 'bertweet'
+way = '3'
+exp_type = 'decoding'
 participant = 1014
 runs = [4, 5, 6, 7, 8, 9, 10]
-obs_acc = [  0.3616,
-0.465,
-0.5016,
-0.45,
-0.385,
-0.412,
-0.47
-
+# runs = [6]
+obs_acc = [0.6175, 0.5802, 0.6276, 0.6231, 0.6022, 0.5903, 0.5271
 ]
-run_p_values, pvalues_fdr = permutation_test_titration(participant, runs, obs_acc,'congruency')
+
+
+run_p_values, pvalues_fdr = permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type, way, embedding_type)
 print("P-values are: ", run_p_values)
 print("Corrected p-values are: ", pvalues_fdr)

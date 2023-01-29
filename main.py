@@ -5,6 +5,7 @@ from nilearn import image as img
 import pickle as pk
 import matplotlib.pyplot as plt
 import os
+import sys
 import glob
 from sklearn.linear_model import Ridge, RidgeCV, LogisticRegressionCV
 from sklearn.metrics import r2_score
@@ -14,6 +15,7 @@ from sklearn.preprocessing import LabelEncoder
 import time
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+import argparse
 
 from functions import store_avg_tr, map_stimuli_w2v, load_nifti_and_w2v, list_diff, \
     two_vs_two, store_trs_spm, store_trs_fsl, leave_two_out, store_masked_trs_spm, store_betas_spm, get_dim_corr, leave_one_out, extended_2v2, \
@@ -22,7 +24,7 @@ from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split, GridSearchCV
 
 # Load custom scripts.
-from exp_funcs import congruency_classification, sentiment_classification
+from exp_funcs import congruency_classification, sentiment_classification, decoding_analysis, encoding_analysis
 
 def avg_trs():
     # Function to store Averaged concatenated TRs on GDrive.
@@ -82,9 +84,9 @@ def create_w2v_mappings(mean=False):
 # create_w2v_mappings(mean=True)
 
 
-def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
+def classify_sentiment_or_congruency_or_decoding(participant=None, run=4, type='sentiment',
                                      iters=50, loocv=False, permuted=False, brain_type='wholeBrain', way='3', 
-                                     use_nc=False):
+                                     use_nc=False, remove_neutral=False, embedding_type='bertweet', avg_w2v=False, encoding=False):
     """
 
     :param participant: participant number.
@@ -99,16 +101,79 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
     # Load data for the given participant and the corresponding run.
 
     # Based on the experiment type, call the appropriate function from the exp_funcs.py file.
-    if type == 'sentiment':
+    if type == 'decoding':
+        if not use_nc:
+            x_data = load_nifti_by_run(participant, type=brain_type, run=run)
+            y_data = load_y(participant=participant, embedding_type=embedding_type, sentiment=False, congruent=False, avg_w2v=avg_w2v)            
+        if use_nc:
+            X = y = None
+            return decoding_analysis(X=X, y=y, participant=participant, loocv=loocv, iters=iters, permuted=permuted, use_nc=use_nc)
+
+        # Align the x_data and the y_data here based on their keys. Assign them separately otherwise considers them as the same object.
+        x = []
+        y = []
+
+        for stim in x_data.keys():
+            x.append(x_data[stim])
+            y.append(y_data[stim])
+        
+        X = np.array(x)
+        y = np.array(y)
+        print("X shape: ", X.shape)
+        print("Y shape: ", y.shape)
+
+
+        if permuted:
+            np.random.shuffle(y)
+
+        # Do pca on the embeddings.
+        # First scale the embeddings.
+        # Then select 20 components and transform the embeddings.
+
+       
+        return decoding_analysis(X=X, y=y, participant=participant, loocv=loocv, iters=iters, permuted=permuted)
+
+    elif type == 'encoding':
+        if not use_nc:
+            x_data = load_nifti_by_run(participant, type=brain_type, run=run)
+            y_data = load_y(participant=participant, embedding_type=embedding_type, sentiment=False, congruent=False, avg_w2v=avg_w2v)            
+        if use_nc:
+            X = y = None
+            return encoding_analysis(X=X, y=y, participant=participant, loocv=loocv, iters=iters, permuted=permuted, use_nc=use_nc)
+
+        # Align the x_data and the y_data here based on their keys. Assign them separately otherwise considers them as the same object.
+        x = []
+        y = []
+
+        for stim in x_data.keys():
+            x.append(x_data[stim])
+            y.append(y_data[stim])
+        
+        X = np.array(x)
+        y = np.array(y)
+        print("X shape: ", X.shape)
+        print("Y shape: ", y.shape)
+
+
+        if permuted:
+            np.random.shuffle(y)
+
+        # Do pca on the embeddings.
+        # First scale the embeddings.
+        # Then select 20 components and transform the embeddings.
+
+       
+        return encoding_analysis(X=X, y=y, participant=participant, loocv=loocv, iters=iters, permuted=permuted)
+
+    elif type == 'sentiment':
         # Do sentiment classification.
         # Load the data.
-
         if not use_nc:
             x_data = load_nifti_by_run(participant, type=brain_type, run=run)
             y_data = load_y(participant=participant, sentiment=True, congruent=False) 
         else:
             X = y = None
-            return sentiment_classification(X=X, y=y_transformed, participant=participant, loocv=loocv, iters=iters, permuted=permuted)
+            return sentiment_classification(X=X, y=y, participant=participant, loocv=loocv, iters=iters, permuted=permuted)
         x = []
         y = []
 
@@ -118,12 +183,15 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
 
         X = np.array(x)
         y = np.array(y)
+        
+        
 
         if permuted:
             np.random.shuffle(y)
         # Now keep only those stims which have positive or negative sentiment.
 
         if remove_neutral:
+            print("Removing neutral")
             removed_idxs = []
             for idx, sent in enumerate(y):
                 if sent == 'Neut':
@@ -144,7 +212,7 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
                         congruent=True, way=way)
         else:
             X = y = None
-            return congruency_classification(X=X, y=y_transformed, loocv=loocv, iters=iters, permuted=permuted)
+            return congruency_classification(X=X, y=y_transformed, participant=participant, loocv=loocv, iters=iters, permuted=permuted)
 
         x = []
         y = []
@@ -159,6 +227,13 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
         if permuted:
             np.random.shuffle(y)
         # Now keep only those stims which have positive or negative sentiment.
+        if remove_neutral:
+            removed_idxs = []
+            for idx, sent in enumerate(y):
+                if sent == 'Neut':
+                    removed_idxs.append(idx)
+            X = np.delete(X, removed_idxs, axis=0)
+            y = np.delete(y, removed_idxs, axis=0)
 
 
         encoder = LabelEncoder()
@@ -167,7 +242,11 @@ def classify_sentiment_or_congruency(participant=None, run=4, type='sentiment',
         
 
         # The following does stratified shuffle split with iters splits.
-        return congruency_classification(X=X, y=y, iters=iters, permuted=permuted)
+        return congruency_classification(X=X, y=y, participant=participant, iters=iters, permuted=permuted)
+
+
+
+# def do_decoding():
 
 
 
@@ -613,57 +692,81 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
 # store_trs_fsl(1012, 'sentiment', remove_mean=False)
 
 
-runs = [4, 5, 6, 7, 8, 9, 10]
-# runs = [4, 5, 6, 7, 8]
+# runs = [4, 5, 6, 7, 8, 9, 10]
+
+args = argparse.ArgumentParser(description='Run complam analysis with arguments. Do not use quotes for the arguments. Currently the code runs for participants 1014')
+requiredArgs.add_argument("-perm", "--permutation", help="Boolean: True or False. Whether to run permutation test or not.", required=True)
+requiredArgs.add_argument("-w", "--way", help="Integer. 2 or 3. For congruency and sentiment classification. What way classification to run.", required=False)
+requiredArgs.add_argument("-e", "--embedding", help="bertweet or avg_w2v or concat_w2v. Required if --analysis is decoding or encoding", required=False)
+requiredArgs.add_argument("-a", "-analysis", help="Analysis type: decoding or encoding or classification.", required=True)
+requiredArgs.add_argument("-b","--brain_type", help="wholeBrain, priceNine, or motor. Brain type to use.", required=True)
+requiredArgs.add_argument("-exp", "--exp_type", help="sentiment or congruency. Required only when doing classification analysis. Default is sentiment", required=False)
+requiredArgs.add_argument("-rn", "--remove_neutral", help="Boolean. Whether to remove neutral stimulus examples from the dataset when doing sentiment or congruency classification. Default=False". required=False)
+requiredArgs.add_argument("-part", "--participant", help="Participant to run the analysis for. Select one the list [1014, 1030, 1032, 1037, 1038]", required=True)
+requiredArgs.add_argument("-r", "--run", help="all or specify a run number (to run the analysis for the specific titration run). Example -r=all or -r=4.", required=True)
+
+runs = [10]
 variances_explained = []
-# parts = [1014, 1030, 1032, 1038]
-parts = [1014]
+# parts = [1014, 1030, 1032, 1037, 1038]
+parts = [int(sys.argv[2])]
 p_accs = {}
 for p in parts:
     p_accs[p] = {}
 
 
-permutation = False
+permutation = True
 print("Permuted: ", permutation)
 iters = 50
-exp_type = 'sentiment'  # 'congruency' or 'sentiment'.
-loocv = False
-brain_type = 'motor'  # 'wholeBrain', 'priceNine', or 'motor'
-way = '2'
+exp_type = sys.argv[4]  # 'congruency', 'sentiment', or 'decoding'
+loocv = False if sys.argv[5] == 'False' else True
+brain_type = sys.argv[1]  # 'wholeBrain', 'priceNine', or 'motor' passing this as a command-line argument.
+way = sys.argv[3]
 use_nc = False
-remove_neutral = True
-
+remove_neutral = False
+embedding_type = 'bertweet'
+avg_w2v=False
+encoding = False
+print(exp_type)
+print("way: ", way)
 if use_nc:
+    print("Using noise ceiling")
     if permutation:
-        iter_scores = classify_sentiment_or_congruency(participant=p, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, use_nc=use_nc)
+        iter_scores = classify_sentiment_or_congruency_or_decoding(participant=p, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, use_nc=use_nc)
         p_accs[p]= iter_scores
     else:
-        score = classify_sentiment_or_congruency(participant=p, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, use_nc=use_nc)
+        score = classify_sentiment_or_congruency_or_decoding(participant=p, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, use_nc=use_nc)
         p_accs[p] = score
     print("All accuracies:", p_accs)
     timestr = time.strftime("%Y%m%d-%H%M%S")
     np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{p}/{timestr}_iter_scores_{way}_way.npz", p_accs)
+
     
 else:
+    print("Not using noise ceiling")
     for p in parts:
         if p != 1037:
             print("Participant: ", p)
             runs = [4, 5, 6, 7, 8, 9, 10]
+            # runs = [4, 5]
+            # runs = [6, 7]
+            # runs = [8, 9]
+            # runs = [int(sys.argv[6])]
         else:
             runs = [4, 5, 6, 7, 8]
         for run in runs:
-            
             print("CV betas made with runs: ", run)
             print("Calling classify sentiment or congruency function")
             if permutation:
-                iter_scores = classify_sentiment_or_congruency(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way)
+                iter_scores = classify_sentiment_or_congruency_or_decoding(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, remove_neutral=remove_neutral, embedding_type=embedding_type, avg_w2v=avg_w2v, encoding=encoding)
                 p_accs[p][run] = iter_scores
             else:
-                score = classify_sentiment_or_congruency(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way)
+                score = classify_sentiment_or_congruency_or_decoding(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, remove_neutral=remove_neutral, embedding_type=embedding_type, avg_w2v=avg_w2v, encoding=encoding)
                 p_accs[p][run] = score
+                # print("All accuracies:", p_accs)
         if permutation:
             # Save the permutation test scores as an npz file.
             timestr = time.strftime("%Y%m%d-%H%M%S")
-            np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{p}/{timestr}_iter_scores_{way}_way.npz", p_accs)
+            np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{p}/{timestr}_{brain_type}_iter_scores_{exp_type}_{embedding_type}_way_{way}.npz", p_accs)
         else:
             print("All accuracies:", p_accs)
+    print("All accuracies:", p_accs)

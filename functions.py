@@ -867,7 +867,7 @@ def list_diff(li1, li2):
 
 def get_dim_corr(ypred, ytest):
     """
-    Calculate dimension wise correlation for the word vectors.
+    Calculate dimension wise correlation for the word vectors. This implementation is general. As long as the two tensors are matrices, it should work.
     :return: Correlation
 
     NOTE: ypred and ytest should have equal number of dimensions for dimension 1.
@@ -875,10 +875,12 @@ def get_dim_corr(ypred, ytest):
     # assert ypred.shape[1] == ytest.shape[1]
 
     # np.corrcoef(ypred, ytest)
-    ypred = np.array(ypred)
-    ypred = ypred.reshape(ypred.shape[0], ypred.shape[2])
-    ytest = np.array(ytest)
-    ytest = ytest.reshape(ytest.shape[0], ytest.shape[2])
+    if ypred.type is not np.ndarray:
+        ypred = np.array(ypred)
+        ypred = ypred.reshape(ypred.shape[0], ypred.shape[2])
+    if ytest.type is not np.ndarray:
+        ytest = np.array(ytest)
+        ytest = ytest.reshape(ytest.shape[0], ytest.shape[2])
     dim_corrs = []
     for i in range(ypred.shape[1]):
         r, p_value = stats.pearsonr(ypred[:, i], ytest[:, i])
@@ -1001,6 +1003,7 @@ def load_y(participant='', embedding_type='w2v', avg_w2v=False, sentiment=False,
             elif way == '2':
                 w2v_path = f"embeds/all_congruency_2_way.npz"
         else:
+            print("Load embeddings for decoding")
             if embedding_type == 'w2v':
                 if avg_w2v == False:
                     w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/two_words_stim_w2v_concat_dict.npz"
@@ -1016,6 +1019,8 @@ def load_y(participant='', embedding_type='w2v', avg_w2v=False, sentiment=False,
                     w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/sixty_two_word_stims_avg.npz"
             elif embedding_type == 'sixty_roberta':
                 w2v_path = '/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/roberta_sixty_two_word_pooler_output_vectors.npz'
+            elif embedding_type == 'bertweet':
+                w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/bertweet_pooler_output.npz"
 
 
 
@@ -1038,6 +1043,8 @@ def get_train_and_test_samples(participant, load_avg_trs, beta, beta_mask_type,
     # First we need to group the samples according to the stimuli.
     x = load_nifti(participant, load_avg_trs, beta=beta, beta_mask_type=beta_mask_type)
     y = load_y(avg_w2v=avg_w2v, roberta=roberta, sentiment=sentiment, congruent=congruent)
+
+
 
 
 
