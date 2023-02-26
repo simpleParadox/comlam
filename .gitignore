@@ -1,3 +1,11 @@
 __pycache__
 sh/
 comlam/
+out_files/
+predictions/
+saved_results/
+*.npz
+*.out
+*.png
+data/
+permutation_tests/

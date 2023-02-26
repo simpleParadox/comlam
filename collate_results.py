@@ -44,7 +44,7 @@ def permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type,
         non_corrected_p_values.append(p_value)
         run_p_values[run] = p_value
         sns.kdeplot(run_perm_values)
-        plt.savefig(f"{participant}_{exp_type}_{brain_type}_{run}_{embedding_type}_way_{way}.png")
+        # plt.savefig(f"{participant}_{exp_type}_{brain_type}_{run}_{embedding_type}_way_{way}.png")
 
     # Do p-value correction for multiple comparisons.
     alpha_level = 0.05
@@ -56,15 +56,20 @@ def permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type,
 
 
 brain_type = 'motor'
-embedding_type = 'bertweet'
+embedding_type = 'sixty_w2v'
 way = '3'
 exp_type = 'decoding'
-participant = 1014
+participant = 'Pilot_08Feb23'
 runs = [4, 5, 6, 7, 8, 9, 10]
-# runs = [6]
-obs_acc = [0.6175, 0.5802, 0.6276, 0.6231, 0.6022, 0.5903, 0.5271
+obs_acc = [
+    0.6316,
+    0.6073,
+    0.6107,
+    0.5576,
+    0.5775,
+    0.561,
+    0.579
 ]
-
 
 run_p_values, pvalues_fdr = permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type, way, embedding_type)
 print("P-values are: ", run_p_values)

@@ -71,6 +71,7 @@ def decoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, p
             scaler_target = StandardScaler()
             y_train = scaler_target.fit_transform(y_train)
             y_test = scaler_target.transform(y_test)
+            print("Y_train shape: ", y_train.shape)
 
             pca = PCA(n_components=20, random_state=42)
             y_train = pca.fit_transform(y_train)
@@ -97,7 +98,7 @@ def decoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, p
 
 
 
-def encoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, permuted=False, current_seed=-1, use_nc=False, brain_type='wholeBrain', remove_neutral=False, do_corr=False):
+def encoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, permuted=False, current_seed=-1, use_nc=False, brain_type='wholeBrain', remove_neutral=False, do_corr=False, correlation_prefix_file_name=None):
     fold_accuracies = []
     iter_count = 0
     correlation_values = None
@@ -152,9 +153,9 @@ def encoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, p
             y_train = scaler_target.fit_transform(y_train)
             y_test = scaler_target.transform(y_test)
 
-            pca = PCA(n_components=20, random_state=42)
+            pca = PCA(n_components=53, random_state=42)
             X_train = pca.fit_transform(X_train)
-            x_test = pca.transform(X_test)
+            X_test = pca.transform(X_test)
 
             # Now train the model.
             alphas = [0.001, 0.01, 0.1, 1, 10, 100, 1000]
@@ -168,15 +169,32 @@ def encoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, p
             # print("Actual: ", y_test)
             # print("Accuracy: ", accuracy)
             # Use 2vs2 accuracy here.
-        accuracy, cosine_diff = extended_2v2(preds_list, y_test_list)
+        
         if do_corr:
             # Do correlation calculation here.
+            # print("Preds list: ", preds_list)
+            # print("Preds list first item shape: ", preds_list[0].shape)
+            # print("Preds list length: ", len(preds_list))
             correlation_values = get_dim_corr(preds_list, y_test_list)
-        print("Accuracy: ", accuracy, flush=True)
-        fold_accuracies.append(accuracy)
-        if permuted:
-            return fold_accuracies, correlation_values
-        return np.mean(fold_accuracies), correlation_values
+            # print("Correlation values: ", correlation_values)
+            # print("Correlation values length: ", len(correlation_values))
+            # print("correlation values mean: ", np.mean(correlation_values, axis=0))
+            # print("correlation values mean shape: ", np.mean(correlation_values, axis=0).shape)
+            # Store the correlation values
+            np.savez_compressed(f'/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/predictions/encoding/correlation_values/{participant}_correlation_encoding_{correlation_prefix_file_name}.npz', correlation_values)
+            if permuted:
+                return correlation_values
+            return np.mean(correlation_values)
+        else:
+            accuracy, cosine_diff = extended_2v2(preds_list, y_test_list)
+            print("Accuracy: ", accuracy, flush=True)
+            fold_accuracies.append(accuracy)
+            if permuted:
+                return fold_accuracies
+            return np.mean(fold_accuracies)
+        # if permuted:
+        #     return fold_accuracies, correlation_values
+        # return np.mean(fold_accuracies), np.mean(correlation_values)
 
 
 

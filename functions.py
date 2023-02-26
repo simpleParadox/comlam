@@ -875,10 +875,10 @@ def get_dim_corr(ypred, ytest):
     # assert ypred.shape[1] == ytest.shape[1]
 
     # np.corrcoef(ypred, ytest)
-    if ypred.type is not np.ndarray:
+    if type(ypred) is not np.ndarray:
         ypred = np.array(ypred)
         ypred = ypred.reshape(ypred.shape[0], ypred.shape[2])
-    if ytest.type is not np.ndarray:
+    if type(ytest) is not np.ndarray:
         ytest = np.array(ytest)
         ytest = ytest.reshape(ytest.shape[0], ytest.shape[2])
     dim_corrs = []
@@ -886,6 +886,10 @@ def get_dim_corr(ypred, ytest):
         r, p_value = stats.pearsonr(ypred[:, i], ytest[:, i])
         dim_corrs.append(r)
     return dim_corrs
+
+def get_dim_corr_encoding(ypred_list, ytest_list):
+    pass
+    
 
 def get_violin_plot(participant, corr_values):
     """
@@ -906,11 +910,17 @@ def load_nifti_by_run(participant, type='wholeBrain', run=4):
             nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
     elif system == 'Linux':
         if type != 'motor':
-            nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+            if 'Pilot' in participant:
+                nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/{type}/{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+            else:
+                nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
         elif type == 'motor':
-            nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/motor_ba12346/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+            if 'Pilot' in participant:
+                nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/motor_ba12346/{participant}_{type}_beta_dict_{run_suffix}runs.npz"
+            else:
+                nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/motor_ba12346/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
 
-    
+    print("Nifti path: ", nifti_path)
     nifti_data = np.load(nifti_path, allow_pickle=True)['arr_0'].tolist()
     return nifti_data
     
@@ -1021,7 +1031,11 @@ def load_y(participant='', embedding_type='w2v', avg_w2v=False, sentiment=False,
                 w2v_path = '/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/roberta_sixty_two_word_pooler_output_vectors.npz'
             elif embedding_type == 'bertweet':
                 w2v_path = "/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/bertweet_pooler_output.npz"
-
+            elif embedding_type == 'twitter_w2v':
+                if avg_w2v == False:
+                    w2v_path = '/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/twitter_word2vec_sixty_concat.npz'
+                else:
+                    w2v_path = '/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/embeds/twitter_word2vec_sixty_average.npz'
 
 
     w2v_data = np.load(w2v_path, allow_pickle=True)['arr_0'].tolist()
