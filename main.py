@@ -735,6 +735,8 @@ for p in parts:
     p_accs[p] = {}
 
 
+
+# Arguments, currently being set manually.
 permutation = False
 print("Permuted: ", permutation)
 iters = 50
