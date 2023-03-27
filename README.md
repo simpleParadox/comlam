@@ -33,13 +33,13 @@ pip install mne
 ```
 python main.py
 ```
-NOTE: If you get an error saying 'a' package is not found/installed, then run the following command
+NOTE: If you get an error saying a package is not found/installed, then run the following command
 ```
 pip install <package_name> # (e.g., pip install numpy)
 ```
 
 ## How to change arguments, currently, the arguments have to be changed manually by going into the main.py file (support for command line arguments will be added soon).
-Find the following set of lines in main.py. It should be somewhere near the end of the file (see the line numbers). Modify the arguments accordingly.
+Find the following set of lines in main.py. It should be somewhere near the end of the file (see the line numbers). Modify the arguments accordingly. Rerun the code by using ```python main.py```.
 ![image](https://user-images.githubusercontent.com/17592815/227997117-40ec8064-2e44-4240-a119-49346aa86bbc.png)
 
 
