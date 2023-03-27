@@ -86,7 +86,7 @@ def create_w2v_mappings(mean=False):
 
 def classify_sentiment_or_congruency_or_decoding(participant=None, run=4, type='sentiment',
                                      iters=50, loocv=False, permuted=False, brain_type='wholeBrain', way='3', 
-                                     use_nc=False, remove_neutral=False, embedding_type='bertweet', avg_w2v=False, do_corr=False, correlation_store_file_prefix='bertweet'):
+                                     use_nc=False, remove_neutral=False, embedding_type='bertweet', avg_w2v=False, do_corr=False, correlation_store_file_prefix='bertweet', non_zero_shot_folder_path=''):
     """
 
     :param participant: participant number.
@@ -102,26 +102,44 @@ def classify_sentiment_or_congruency_or_decoding(participant=None, run=4, type='
 
     # Based on the experiment type, call the appropriate function from the exp_funcs.py file.
     if type == 'decoding':
-        if not use_nc:
-            x_data = load_nifti_by_run(participant, type=brain_type, run=run)
-            y_data = load_y(participant=participant, embedding_type=embedding_type, sentiment=False, congruent=False, avg_w2v=avg_w2v)            
-        if use_nc:
-            X = y = None
-            return decoding_analysis(X=X, y=y, participant=participant, loocv=loocv, iters=iters, permuted=permuted, use_nc=use_nc)
-
-        # Align the x_data and the y_data here based on their keys. Assign them separately otherwise considers them as the same object.
-        x = []
-        y = []
-
-        for stim in x_data.keys():
-            x.append(x_data[stim])
-            y.append(y_data[stim])
+        if loocv:
+            # If doing leave one out cross-validation.
+            if not use_nc:
+                x_data = load_nifti_by_run(participant, type=brain_type, run=run)
+                y_data = load_y(participant=participant, embedding_type=embedding_type, sentiment=False, congruent=False, avg_w2v=avg_w2v)
+            if use_nc:
+                X = y = None
+                return decoding_analysis(X=X, y=y, participant=participant, loocv=loocv, iters=iters, permuted=permuted, use_nc=use_nc)
+        else:
+            # Not doing the loocv. This is the non-zero-shot analysis.
+            assert non_zero_shot_folder_path != ''
+            # Align the x_data and the y_data here based on their keys. Assign them separately otherwise considers them as the same object.
+            # Load the data from the specific folder.
+            x_data = np.load(non_zero_shot_folder_path, allow_pickle=True)['arr_0'].tolist()
+            y_data = load_y(participant=participant, embedding_type=embedding_type, sentiment=False, congruent=False, avg_w2v=avg_w2v)
+            x = []
+            y = []
+            for stim in x_data.keys():
+                x.extend(x_data[stim])
+                y.append(y_data[stim])    
+            # Repeat the numer of the word embeddings to match the length of x_data.
+            y = np.repeat(y, len(x) // len(y), axis=0)
+            assert len(y) == len(x)
         
+        if loocv:
+            # Align the x_data and the y_data here based on their keys. Assign them separately otherwise considers them as the same object.
+            x = []
+            y = []
+
+            for stim in x_data.keys():
+                x.append(x_data[stim])
+                y.append(y_data[stim])
+
+
         X = np.array(x)
-        y = np.array(y)
         print("X shape: ", X.shape)
         print("Y shape: ", y.shape)
-
+        
 
         if permuted:
             np.random.shuffle(y)
@@ -708,27 +726,27 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
 
 runs = [10]
 variances_explained = []
-# parts = [1014, 1030, 1032, 1038]
-parts = ['Pilot_08Feb23']
+# parts = [1014, 1030, 1032, 1038, 'Pilot_08Feb23']
+parts = [1014]
+# parts = ['Pilot_08Feb23']
 # parts = [int(sys.argv[2])]
 p_accs = {}
 for p in parts:
     p_accs[p] = {}
 
 
-permutation = True
+permutation = False
 print("Permuted: ", permutation)
 iters = 50
-exp_type = sys.argv[4]  # 'congruency', 'sentiment','decoding', or 'encoding'
-loocv = False if sys.argv[5] == 'False' else True
-brain_type = sys.argv[1]  # 'wholeBrain', 'priceNine', or 'motor' passing this as a command-line argument.
-way = sys.argv[3]
+exp_type = 'decoding' #sys.argv[4]  # 'congruency', 'sentiment','decoding', or 'encoding'
+loocv = False #if sys.argv[5] == 'False' else True
+brain_type = 'wholeBrain'#sys.argv[1]  # 'wholeBrain', 'priceNine', or 'motor' passing this as a command-line argument.
+way = '3'#sys.argv[3]
 use_nc = False
 remove_neutral = False
 embedding_type = 'sixty_w2v' # sixty_w2v or bertweet or twitter_w2v
-avg_w2v = False # False if you wanna use concatenated word2vec or True for averaged word2vec.
+avg_w2v = True # False if you wanna use concatenated word2vec or True for averaged word2vec.
 do_corr = False
-# encoding = True
 correlation_prefix_file_name = None
 if do_corr:
     if embedding_type == 'sixty_w2v':
@@ -736,7 +754,7 @@ if do_corr:
         if avg_w2v:
             correlation_prefix_file_name = 'avg_w2v'
         
-        
+non_zero_shot_folder_path = '/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/other/P1014_2k/NonZeroShot/FoursRandom/P1014_2k_beta_dict.npz'#str(sys.argv[7])
             
 
 print(exp_type)
@@ -774,14 +792,14 @@ else:
                 iter_scores = classify_sentiment_or_congruency_or_decoding(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, remove_neutral=remove_neutral, embedding_type=embedding_type, avg_w2v=avg_w2v, do_corr=do_corr, correlation_store_file_prefix=correlation_prefix_file_name)
                 p_accs[p][run] = iter_scores
             else:
-                score = classify_sentiment_or_congruency_or_decoding(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, remove_neutral=remove_neutral, embedding_type=embedding_type, avg_w2v=avg_w2v, do_corr=do_corr, correlation_store_file_prefix=correlation_prefix_file_name)
+                score = classify_sentiment_or_congruency_or_decoding(participant=p, run=run, type=exp_type, iters=iters, loocv=loocv, permuted=permutation, brain_type=brain_type, way=way, remove_neutral=remove_neutral, embedding_type=embedding_type, avg_w2v=avg_w2v, do_corr=do_corr, correlation_store_file_prefix=correlation_prefix_file_name, non_zero_shot_folder_path=non_zero_shot_folder_path)
                 p_accs[p][run] = score
                 # print("All accuracies:", p_accs)
         if permutation:
             # Save the permutation test scores as an npz file.
             timestr = time.strftime("%Y%m%d-%H%M%S")
             r = np.random.randint(0,10000,1)[0]
-            np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{p}/{timestr}_{r}_{brain_type}_iter_scores_{exp_type}_{embedding_type}_way_{way}.npz", p_accs)
+            np.savez_compressed(f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{p}/{timestr}_{r}_{brain_type}_iter_scores_{exp_type}_{embedding_type}_way_{way}_avg_w2v_{str(avg_w2v)}.npz", p_accs)
         else:
             print("All accuracies:", p_accs)
     print("All accuracies:", p_accs)

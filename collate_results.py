@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 from mne.stats import fdr_correction
 
 
-def permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type, way, embedding_type):
+def permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type, way, embedding_type, avg_w2v=None):
     # First read the permutation accuracy files.
     permutation_results_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/saved_results/permutation/{exp_type}/{participant}/"
     perm_results = []
     run_p_values = {}
     non_corrected_p_values = []
-    for f in glob.glob(permutation_results_path + f"*{brain_type}*{exp_type}*{embedding_type}*way_{way}.npz"):
+    for f in glob.glob(permutation_results_path + f"*{brain_type}*{exp_type}*{embedding_type}*way_{way}_avg_w2v_{str(avg_w2v)}.npz"):
         # 'f' is the file name.
         try:
             results = np.load(f, allow_pickle=True)['arr_0'].tolist()
@@ -56,21 +56,22 @@ def permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type,
 
 
 brain_type = 'motor'
-embedding_type = 'sixty_w2v'
+embedding_type = 'twitter_w2v'
 way = '3'
+avg_w2v = True
 exp_type = 'decoding'
-participant = 'Pilot_08Feb23'
+participant = 1014
 runs = [4, 5, 6, 7, 8, 9, 10]
 obs_acc = [
-    0.6316,
-    0.6073,
-    0.6107,
-    0.5576,
-    0.5775,
-    0.561,
-    0.579
+    0.6265,
+    0.6858,
+    0.7197,
+    0.6672,
+    0.6282,
+    0.6288,
+    0.6542
 ]
 
-run_p_values, pvalues_fdr = permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type, way, embedding_type)
+run_p_values, pvalues_fdr = permutation_test_titration(participant, runs, obs_acc, exp_type, brain_type, way, embedding_type, avg_w2v=avg_w2v)
 print("P-values are: ", run_p_values)
 print("Corrected p-values are: ", pvalues_fdr)

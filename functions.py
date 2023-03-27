@@ -865,6 +865,15 @@ def leave_one_out(stims):
 def list_diff(li1, li2):
     return list(set(li1) - set(li2)) + list(set(li2) - set(li1))
 
+def get_dim_corr_for_numpy(ypred, ytest):
+    ypred = np.squeeze(ypred)
+    ytest = np.squeeze(ytest)
+    dim_corrs = []
+    for i in range(ypred.shape[1]):
+        r, p_value = stats.pearsonr(ypred[:, i], ytest[:, i])
+        dim_corrs.append(r)
+    return dim_corrs
+
 def get_dim_corr(ypred, ytest):
     """
     Calculate dimension wise correlation for the word vectors. This implementation is general. As long as the two tensors are matrices, it should work.
@@ -910,12 +919,12 @@ def load_nifti_by_run(participant, type='wholeBrain', run=4):
             nifti_path = f"/Users/simpleparadox/Desktop/Projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
     elif system == 'Linux':
         if type != 'motor':
-            if 'Pilot' in participant:
+            if isinstance(participant, str) and 'Pilot' in participant:
                 nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/{type}/{participant}_{type}_beta_dict_{run_suffix}runs.npz"
             else:
                 nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/{type}/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
         elif type == 'motor':
-            if 'Pilot' in participant:
+            if isinstance(participant, str) and 'Pilot' in participant:
                 nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/motor_ba12346/{participant}_{type}_beta_dict_{run_suffix}runs.npz"
             else:
                 nifti_path = f"/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/motor_ba12346/P{participant}_{type}_beta_dict_{run_suffix}runs.npz"
