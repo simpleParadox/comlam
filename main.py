@@ -727,8 +727,8 @@ def cross_validation_nested(decoding=True, part=None, avg_w2v=False, mean_remove
 runs = [10]
 variances_explained = []
 # parts = [1014, 1030, 1032, 1038, 'Pilot_08Feb23']
-parts = [1014]
-# parts = ['Pilot_08Feb23']
+# parts = [1014]
+parts = ['Pilot_08Feb23']
 # parts = [int(sys.argv[2])]
 p_accs = {}
 for p in parts:
@@ -741,13 +741,13 @@ permutation = False
 print("Permuted: ", permutation)
 iters = 50
 exp_type = 'decoding' #sys.argv[4]  # 'congruency', 'sentiment','decoding', or 'encoding'
-loocv = False #if sys.argv[5] == 'False' else True
+loocv = False #if sys.argv[5] == 'False' else True  # This controls if you're doing zero-shot or not.
 brain_type = 'wholeBrain'#sys.argv[1]  # 'wholeBrain', 'priceNine', or 'motor' passing this as a command-line argument.
 way = '3'#sys.argv[3]
 use_nc = False
 remove_neutral = False
 embedding_type = 'sixty_w2v' # sixty_w2v or bertweet or twitter_w2v
-avg_w2v = True # False if you wanna use concatenated word2vec or True for averaged word2vec.
+avg_w2v = False # False if you wanna use concatenated word2vec or True for averaged word2vec.
 do_corr = False
 correlation_prefix_file_name = None
 if do_corr:
@@ -756,7 +756,7 @@ if do_corr:
         if avg_w2v:
             correlation_prefix_file_name = 'avg_w2v'
         
-non_zero_shot_folder_path = '/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/other/P1014_2k/NonZeroShot/FoursRandom/P1014_2k_beta_dict.npz'#str(sys.argv[7])
+non_zero_shot_folder_path = '/home/rsaha/projects/def-afyshe-ab/rsaha/projects/comlam/data/spm/sentiment/other/Pilot_08Feb23/NonZeroShot/Twos/Pilot_08Feb23_beta_dict.npz'#str(sys.argv[7])
             
 
 print(exp_type)
@@ -784,7 +784,7 @@ else:
             # runs = [4, 5]
             # runs = [6, 7]
             # runs = [8, 9]
-            # runs = [int(sys.argv[6])]
+            # runs = [int(sys.argv[6])]0.006254762927217605
         else:
             runs = [4, 5, 6, 7, 8]
         for run in runs:

@@ -796,6 +796,14 @@ def two_vs_two(preds, ytest, store_cos_diff=False):
 
     return points * 1.0 / total_points, cosine_diffs  # Multiplying by 1.0 for floating point conversion.
 
+
+def evaluate_non_zero_shot():
+    """
+    Method to evaluate the 
+    """
+    pass
+
+
 def extended_2v2(y_test, preds, store_cos_diff=False):
     """
     Calculate accuracy for each possible pair.
