@@ -102,6 +102,7 @@ def classify_sentiment_or_congruency_or_decoding(participant=None, run=4, type='
 
     # Based on the experiment type, call the appropriate function from the exp_funcs.py file.
     if type == 'decoding':
+        y_nums_rep = None
         if loocv:
             # If doing leave one out cross-validation.
             if not use_nc:
@@ -123,7 +124,9 @@ def classify_sentiment_or_congruency_or_decoding(participant=None, run=4, type='
                 x.extend(x_data[stim])
                 y.append(y_data[stim])    
             # Repeat the numer of the word embeddings to match the length of x_data.
+            y_nums = [_ for _ in range(len(y))]
             y = np.repeat(y, len(x) // len(y), axis=0)
+            y_nums_rep = np.repeat(y_nums, len(x) // len(y_nums), axis=0)
             assert len(y) == len(x)
         
         if loocv:
@@ -149,7 +152,7 @@ def classify_sentiment_or_congruency_or_decoding(participant=None, run=4, type='
         # Then select 20 components and transform the embeddings.
 
        
-        return decoding_analysis(X=X, y=y, participant=participant, loocv=loocv, iters=iters, permuted=permuted)
+        return decoding_analysis(X=X, y=y, participant=participant, loocv=loocv, iters=iters, permuted=permuted, y_nums_rep=y_nums_rep)
 
     elif type == 'encoding':
         print("Doing encoding")

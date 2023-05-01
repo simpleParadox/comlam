@@ -19,7 +19,7 @@ from functions import extended_2v2, leave_one_out, get_dim_corr, get_dim_corr_fo
 
 
 def decoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, permuted=False, current_seed=-1, use_nc=False, brain_type='wholeBrain',
-                             remove_neutral=False):
+                             remove_neutral=False, y_nums_rep=None):
     fold_accuracies = []
     iter_count = 0
     if permuted:
@@ -39,8 +39,8 @@ def decoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, p
             X_test = scaler.transform(X_test)
 
             param_grid = {'alpha':  [0.001, 0.01, 0.1, 1, 10, 100, 1000]}
-            model = RidgeCV()
-            clf = GridSearchCV(model, param_grid, n_jobs=-1, cv=None)  # Setting cv=None uses default 5 fold cross-validation.
+            clf = RidgeCV() # TODO: Make sure you fix this before running this analysis if required.
+            # clf = GridSearchCV(model, param_grid, n_jobs=-1, cv=None)  # Setting cv=None uses default 5 fold cross-validation.
             clf.fit(X_train, y_train)
             # accuracy = clf.score(X_test, y_test)
             # Use 2vs2 accuracy here.
@@ -104,7 +104,7 @@ def decoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, p
             y_test_list = []
             avg_correlation_value_for_split = []
             for iter in range(iters):
-                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=iter)
+                X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=iter, stratify=y_nums_rep)  # Stratifying for non-zero-shot.
                 iter_count += 1
                 print("Iter: ", iter_count)
                 print("X_train shape: ", X_train.shape)
@@ -129,17 +129,23 @@ def decoding_analysis(X=None, y=None, participant=None, iters=50, loocv=False, p
                 # clf = GridSearchCV(model, param_grid, n_jobs=-1, cv=LeaveOneOut())  # Setting cv=None uses default 5 fold cross-validation.
                 clf.fit(X_train, y_train)
                 pred = clf.predict(X_test)
-                # preds_list.append(pred)
-                # y_test_list.append(y_test)
-                correlation_values = get_dim_corr_for_numpy(pred, y_test)
-                print("Correlation: ", correlation_values, flush=True)
-                print("Average correlation value: ", np.mean(correlation_values))
-                avg_correlation_value_for_split.append(np.mean(correlation_values))
-            print("All averaged correlation values: ", avg_correlation_value_for_split)
-            print("All averaged correlation values averaged: ", np.mean(avg_correlation_value_for_split))
+                preds_list.append(pred)
+                y_test_list.append(y_test)
+            accuracy, cosine_diff = extended_2v2(preds_list, y_test_list)
+            print("Accuracy: ", accuracy, flush=True)
+            fold_accuracies.append(accuracy)
             if permuted:
-                return avg_correlation_value_for_split
-            return np.mean(avg_correlation_value_for_split)
+                return fold_accuracies
+            return np.mean(fold_accuracies)
+            #     correlation_values = get_dim_corr_for_numpy(pred, y_test)
+            #     print("Correlation: ", correlation_values, flush=True)
+            #     print("Average correlation value: ", np.mean(correlation_values))
+            #     avg_correlation_value_for_split.append(np.mean(correlation_values))
+            # print("All averaged correlation values: ", avg_correlation_value_for_split)
+            # print("All averaged correlation values averaged: ", np.mean(avg_correlation_value_for_split))
+            # if permuted:
+            #     return avg_correlation_value_for_split
+            # return np.mean(avg_correlation_value_for_split)
 
 
 

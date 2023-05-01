@@ -799,9 +799,11 @@ def two_vs_two(preds, ytest, store_cos_diff=False):
 
 def evaluate_non_zero_shot():
     """
-    Method to evaluate the 
+    Method to evaluate the non_zero_shot decoding analysis.
     """
     pass
+
+
 
 
 def extended_2v2(y_test, preds, store_cos_diff=False):
